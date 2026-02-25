@@ -1,2 +1,2 @@
-# Det.Good
+# DET FINAL
 
