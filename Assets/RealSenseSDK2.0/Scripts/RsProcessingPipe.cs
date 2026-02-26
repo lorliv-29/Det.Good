@@ -11,8 +11,6 @@ using UnityEngine.UI;
 [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
 public sealed class ProcessingBlockDataAttribute : System.Attribute
 {
-    // See the attribute guidelines at
-    //  http://go.microsoft.com/fwlink/?LinkId=85236
     public readonly Type blockClass;
 
     public ProcessingBlockDataAttribute(Type blockClass)
@@ -20,7 +18,6 @@ public sealed class ProcessingBlockDataAttribute : System.Attribute
         this.blockClass = blockClass;
     }
 }
-
 
 [Serializable]
 public class RsProcessingPipe : RsFrameProvider
@@ -46,7 +43,6 @@ public class RsProcessingPipe : RsFrameProvider
         Source.OnNewSample += _block.Process;
         ActiveProfile = activeProfile;
 
-        // For the L5** device, disable processing blocks in the PointCloudProcessingBlocks scene, except for Temporaral Filter
         if (ActiveProfile != null)
         {
             string devName = ActiveProfile.Device.Info.GetInfo(CameraInfo.Name);
@@ -67,7 +63,6 @@ public class RsProcessingPipe : RsFrameProvider
                     }
                 }
             }
-
         }
 
         Streaming = true;
@@ -114,9 +109,6 @@ public class RsProcessingPipe : RsFrameProvider
 
             Frame f = frame;
 
-            // Here you know that you have a frame.
-            Debug.Log("We have a frame: "+f.DataSize);
-
             if (profile != null)
             {
                 var filters = profile._processingBlocks.AsReadOnly();
@@ -129,7 +121,6 @@ public class RsProcessingPipe : RsFrameProvider
                     var r = pb.Process(f, src);
                     if (r != f)
                     {
-                        // Prevent from disposing the original frame during post-processing
                         if (f != frame)
                         {
                             f.Dispose();
