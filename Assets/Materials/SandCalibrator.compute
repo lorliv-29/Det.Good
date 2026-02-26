@@ -1,0 +1,31 @@
+// This tells the GPU which function to run
+#pragma kernel CalibrateSand
+
+// The raw data buffer coming from the RealSense camera
+StructuredBuffer<float3> RawPoints;
+
+// The final scaled and positioned data buffer for VR rendering and physics
+RWStructuredBuffer<float3> CalibratedPoints;
+
+// Calibration variables we will send from our C# script
+float3 _Scale;
+float3 _Offset;
+uint _VertexCount;
+
+// We process the points in batches of 64 threads for maximum GPU efficiency
+[numthreads(64, 1, 1)]
+void CalibrateSand (uint3 id : SV_DispatchThreadID)
+{
+    // Safety check: Don't process if the thread ID exceeds our actual point count
+    if (id.x >= _VertexCount) return;
+
+    // 1. Grab the raw position from the camera
+    float3 rawPos = RawPoints[id.x];
+
+    // 2. Apply our 1:1 VR calibration 
+    // We add the offset to align the center of the sandbox, then multiply by the scale to match the VR room size
+    float3 finalPos = (rawPos + _Offset) * _Scale;
+
+    // 3. Save the perfect, game-ready position to the final buffer
+    CalibratedPoints[id.x] = finalPos;
+}
