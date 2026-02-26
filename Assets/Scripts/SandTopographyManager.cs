@@ -7,16 +7,28 @@ public class SandTopographyManager : MonoBehaviour
     [Header("RealSense Integration")]
     public RsFrameProvider Source;
 
-    // The GPU buffer that will hold all our sand coordinates
-    public ComputeBuffer topographyBuffer { get; private set; }
+    [Header("GPU Compute Shader")]
+    public ComputeShader sandCalibrator;
+
+    [Header("VR Sandbox Calibration")]
+    public Vector3 sandboxOffset = new Vector3(0, 0, 0);
+    public Vector3 sandboxScale = new Vector3(1, 1, 1);
+
+    [Header("Rendering")]
+    public Mesh sandGrainMesh;
+    public Material sandMaterial;
+
+    // We now need TWO buffers: one for the raw camera data, one for the final VR data
+    private ComputeBuffer rawBuffer;
+    public ComputeBuffer calibratedBuffer { get; private set; }
 
     private Vector3[] sandVertices;
     private int vertexCount;
     private FrameQueue frameQueue;
+    private int calibrateKernel;
 
     void Start()
     {
-        // Subscribe to the RealSense camera events
         Source.OnStart += OnStartStreaming;
         Source.OnStop += Dispose;
     }
@@ -25,18 +37,18 @@ public class SandTopographyManager : MonoBehaviour
     {
         frameQueue = new FrameQueue(1);
 
-        // Find the depth stream to determine our grid resolution
         using (var depth = profile.Streams.FirstOrDefault(s => s.Stream == Stream.Depth && s.Format == Format.Z16).As<VideoStreamProfile>())
         {
             vertexCount = depth.Width * depth.Height;
-
-            // Initialize the array to hold the points on the CPU temporarily
             sandVertices = new Vector3[vertexCount];
 
-            // Initialize the ComputeBuffer for the GPU
-            // We need vertexCount elements, and each element is a Vector3 (3 floats * 4 bytes = 12 bytes)
-            topographyBuffer = new ComputeBuffer(vertexCount, 12);
+            // Initialize both ComputeBuffers
+            rawBuffer = new ComputeBuffer(vertexCount, 12);
+            calibratedBuffer = new ComputeBuffer(vertexCount, 12);
         }
+
+        // Find the ID of our specific function inside the Compute Shader
+        calibrateKernel = sandCalibrator.FindKernel("CalibrateSand");
 
         Source.OnNewSample += OnNewSample;
     }
@@ -45,7 +57,6 @@ public class SandTopographyManager : MonoBehaviour
     {
         if (frameQueue == null) return;
 
-        // Isolate the point cloud data from the incoming frame
         if (frame.IsComposite)
         {
             using (var fs = frame.As<FrameSet>())
@@ -65,24 +76,59 @@ public class SandTopographyManager : MonoBehaviour
         if (frameQueue != null)
         {
             Points points;
-            // Poll the queue for the latest depth frame
             if (frameQueue.PollForFrame<Points>(out points))
             {
                 using (points)
                 {
                     if (points.VertexData != System.IntPtr.Zero)
                     {
-                        // 1. Copy the raw coordinates from the camera
+                        // 1. Copy raw data
                         points.CopyVertices(sandVertices);
 
-                        // 2. Upload those coordinates directly to the GPU's ComputeBuffer
-                        if (topographyBuffer != null)
+                        // 2. Upload raw data to the first GPU buffer
+                        if (rawBuffer != null)
                         {
-                            topographyBuffer.SetData(sandVertices);
+                            rawBuffer.SetData(sandVertices);
                         }
+
+                        // 3. Run the Compute Shader to calibrate the sand
+                        RunComputeShader();
                     }
                 }
             }
+        }
+    }
+
+    private void RunComputeShader()
+    {
+        if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null) return;
+
+        // Link our C# buffers to the HLSL variables
+        sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
+        sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
+
+        // Send our inspector calibration settings to the GPU
+        sandCalibrator.SetVector("_Offset", sandboxOffset);
+        sandCalibrator.SetVector("_Scale", sandboxScale);
+        sandCalibrator.SetInt("_VertexCount", vertexCount);
+
+        // Calculate how many thread groups we need (total vertices divided by our batch size of 64)
+        int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
+
+        // Dispatch (execute) the shader on the GPU
+        sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);
+
+        // --- THE PROCEDURAL RENDERING COMMAND ---
+        if (sandGrainMesh != null && sandMaterial != null)
+        {
+            // Give our material access to the calibrated buffer
+            sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
+
+            // Define a large bounding box so Unity doesn't accidentally cull (hide) our sand
+            Bounds bounds = new Bounds(Vector3.zero, Vector3.one * 10f);
+
+            // Tell the GPU to draw the mesh for every single point in our buffer!
+            Graphics.DrawMeshInstancedProcedural(sandGrainMesh, 0, sandMaterial, bounds, vertexCount);
         }
     }
 
@@ -96,11 +142,16 @@ public class SandTopographyManager : MonoBehaviour
             frameQueue = null;
         }
 
-        // Always release the ComputeBuffer to prevent memory leaks!
-        if (topographyBuffer != null)
+        // Release BOTH buffers to prevent memory leaks
+        if (rawBuffer != null)
         {
-            topographyBuffer.Release();
-            topographyBuffer = null;
+            rawBuffer.Release();
+            rawBuffer = null;
+        }
+        if (calibratedBuffer != null)
+        {
+            calibratedBuffer.Release();
+            calibratedBuffer = null;
         }
     }
 
