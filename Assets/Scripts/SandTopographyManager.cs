@@ -73,29 +73,49 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
+        // 1. UPDATE THE MATH (Happens ~30 times a second)
         if (frameQueue != null)
         {
             Points points;
+            // Only update if the camera actually gave us a new frame
             if (frameQueue.PollForFrame<Points>(out points))
             {
                 using (points)
                 {
                     if (points.VertexData != System.IntPtr.Zero)
                     {
-                        // 1. Copy raw data
-                        points.CopyVertices(sandVertices);
-
-                        // 2. Upload raw data to the first GPU buffer
-                        if (rawBuffer != null)
+                        if (points.Count != vertexCount || rawBuffer == null)
                         {
-                            rawBuffer.SetData(sandVertices);
+                            vertexCount = points.Count;
+                            sandVertices = new Vector3[vertexCount];
+
+                            if (rawBuffer != null) rawBuffer.Release();
+                            if (calibratedBuffer != null) calibratedBuffer.Release();
+
+                            rawBuffer = new ComputeBuffer(vertexCount, 12);
+                            calibratedBuffer = new ComputeBuffer(vertexCount, 12);
                         }
 
-                        // 3. Run the Compute Shader to calibrate the sand
+                        points.CopyVertices(sandVertices);
+                        rawBuffer.SetData(sandVertices);
+
+                        // Run the math only when new data arrives
                         RunComputeShader();
                     }
                 }
             }
+        }
+
+        // 2. DRAW THE SAND (Happens ~90+ times a second, EVERY frame)
+        if (calibratedBuffer != null && sandGrainMesh != null && sandMaterial != null && vertexCount > 0)
+        {
+            sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
+
+            // Increased to a massive 1000m to prevent Unity from hiding the sand when you turn your head
+            Bounds bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
+
+            // Draw the sand continuously using the last known coordinates
+            Graphics.DrawMeshInstancedProcedural(sandGrainMesh, 0, sandMaterial, bounds, vertexCount);
         }
     }
 
@@ -103,33 +123,14 @@ public class SandTopographyManager : MonoBehaviour
     {
         if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null) return;
 
-        // Link our C# buffers to the HLSL variables
         sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
         sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
-
-        // Send our inspector calibration settings to the GPU
         sandCalibrator.SetVector("_Offset", sandboxOffset);
         sandCalibrator.SetVector("_Scale", sandboxScale);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
 
-        // Calculate how many thread groups we need (total vertices divided by our batch size of 64)
         int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
-
-        // Dispatch (execute) the shader on the GPU
         sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);
-
-        // --- THE PROCEDURAL RENDERING COMMAND ---
-        if (sandGrainMesh != null && sandMaterial != null)
-        {
-            // Give our material access to the calibrated buffer
-            sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
-
-            // Define a large bounding box so Unity doesn't accidentally cull (hide) our sand
-            Bounds bounds = new Bounds(Vector3.zero, Vector3.one * 10f);
-
-            // Tell the GPU to draw the mesh for every single point in our buffer!
-            Graphics.DrawMeshInstancedProcedural(sandGrainMesh, 0, sandMaterial, bounds, vertexCount);
-        }
     }
 
     private void Dispose()
