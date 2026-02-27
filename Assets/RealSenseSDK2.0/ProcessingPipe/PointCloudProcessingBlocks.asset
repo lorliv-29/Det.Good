@@ -15,8 +15,8 @@ MonoBehaviour:
   _processingBlocks:
   - {fileID: 114476060953143426}
   - {fileID: 114613456056826128}
-  - {fileID: 114544001719900210}
   - {fileID: 114401103692956310}
+  - {fileID: 114544001719900210}
   - {fileID: 114093195037715096}
   - {fileID: 114340648865021418}
   - {fileID: 114947088938950326}
@@ -83,9 +83,9 @@ MonoBehaviour:
   m_Name: RsSpatialFilter
   m_EditorClassIdentifier: 
   enabled: 0
-  _filterMagnitude: 2
-  _filterSmoothAlpha: 0.5
-  _filterSmoothDelta: 20
+  _filterMagnitude: 1
+  _filterSmoothAlpha: 1
+  _filterSmoothDelta: 50
   _holeFillingMode: 0
 --- !u!114 &114476060953143426
 MonoBehaviour:
@@ -102,7 +102,7 @@ MonoBehaviour:
   enabled: 0
   _streamFilter: 1
   _formatFilter: 1
-  _filterMagnitude: 4
+  _filterMagnitude: 2
 --- !u!114 &114544001719900210
 MonoBehaviour:
   m_ObjectHideFlags: 0
