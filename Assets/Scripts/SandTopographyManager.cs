@@ -4,6 +4,8 @@ using System.Linq;
 
 public class SandTopographyManager : MonoBehaviour
 {
+    public SandMeshBuilder meshBuilder;
+
     [Header("RealSense Integration")]
     public RsFrameProvider Source;
 
@@ -55,6 +57,21 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
+        // === TRIGGER MESH GENERATION ===
+        // Press the Spacebar to freeze the sand into a physical collider!
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (meshBuilder != null && calibratedBuffer != null)
+            {
+                meshBuilder.GeneratePhysicalMesh(calibratedBuffer);
+            }
+            else
+            {
+                Debug.LogWarning("Cannot build mesh! Either the MeshBuilder is missing or the camera hasn't generated points yet.");
+            }
+        }
+        // ===============================
+
         if (frameQueue != null)
         {
             Points points;
