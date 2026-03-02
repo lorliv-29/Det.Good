@@ -66,7 +66,7 @@ Shader "Custom/SandRenderer"
             }
 
             fixed4 frag (v2f i) : SV_Target {
-                float h = 01 - smoothstep(_MinHeight, _MaxHeight, i.worldPos.z);
+                float h =  smoothstep(_MinHeight, _MaxHeight, i.worldPos.y);
                 fixed4 finalColor = lerp(
                     lerp(_WaterColor, _SandColor, h * 2.0), 
                     lerp(_SandColor, _SnowColor, (h - 0.5) * 2.0), 

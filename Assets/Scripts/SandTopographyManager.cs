@@ -6,6 +6,12 @@ public class SandTopographyManager : MonoBehaviour
 {
     public SandMeshBuilder meshBuilder;
 
+    [Header("Sandbox Cropping (World Space)")]
+    public float minX = -0.5f;
+    public float maxX = 0.5f;
+    public float minZ = -0.5f;
+    public float maxZ = 0.5f;
+
     [Header("RealSense Integration")]
     public RsFrameProvider Source;
 
@@ -24,10 +30,17 @@ public class SandTopographyManager : MonoBehaviour
     private FrameQueue frameQueue;
     private int calibrateKernel;
 
+    private bool isEditMode = true;
+
     void Start()
     {
         Source.OnStart += OnStartStreaming;
         Source.OnStop += Dispose;
+
+        if (meshBuilder != null)
+        {
+            meshBuilder.gameObject.SetActive(false);
+        }
     }
 
     private void OnStartStreaming(PipelineProfile profile)
@@ -39,7 +52,9 @@ public class SandTopographyManager : MonoBehaviour
 
     private void OnNewSample(Frame frame)
     {
-        if (frameQueue == null) return;
+        // === THE SOFTWARE PAUSE ===
+        // If we are in Play Mode, instantly drop the camera frame to save CPU power!
+        if (frameQueue == null || !isEditMode) return;
 
         if (frame.IsComposite)
         {
@@ -57,22 +72,31 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
-        // === TRIGGER MESH GENERATION ===
-        // Press the Spacebar to freeze the sand into a physical collider!
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            if (meshBuilder != null && calibratedBuffer != null)
+            isEditMode = !isEditMode;
+
+            if (!isEditMode)
             {
-                meshBuilder.GeneratePhysicalMesh(calibratedBuffer);
+                Debug.Log("Switched to PLAY MODE. Freezing sand & pausing camera...");
+                if (meshBuilder != null && calibratedBuffer != null)
+                {
+                    meshBuilder.gameObject.SetActive(true);
+                    meshBuilder.GeneratePhysicalMesh(calibratedBuffer);
+                }
             }
             else
             {
-                Debug.LogWarning("Cannot build mesh! Either the MeshBuilder is missing or the camera hasn't generated points yet.");
+                Debug.Log("Switched to EDIT MODE. Hologram & camera active...");
+                if (meshBuilder != null)
+                {
+                    meshBuilder.gameObject.SetActive(false);
+                }
             }
         }
-        // ===============================
 
-        if (frameQueue != null)
+        // === ONLY PROCESS HEAVY MATH IN EDIT MODE ===
+        if (isEditMode && frameQueue != null)
         {
             Points points;
             if (frameQueue.PollForFrame<Points>(out points))
@@ -96,13 +120,13 @@ public class SandTopographyManager : MonoBehaviour
                         points.CopyVertices(sandVertices);
                         rawBuffer.SetData(sandVertices);
 
-                        RunComputeShader();
+                        RunComputeShader(); // This heavy GPU call now only runs in Edit Mode!
                     }
                 }
             }
         }
 
-        if (calibratedBuffer != null && sandGrainMesh != null && sandMaterial != null && vertexCount > 0)
+        if (isEditMode && calibratedBuffer != null && sandGrainMesh != null && sandMaterial != null && vertexCount > 0)
         {
             sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
             Bounds bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
@@ -117,9 +141,14 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
         sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
 
-        // SEND THE GAMEOBJECT TRANSFORM TO THE GPU
         sandCalibrator.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
+
+        // SEND THE BOUNDING BOX LIMITS TO THE GPU
+        sandCalibrator.SetFloat("_MinX", minX);
+        sandCalibrator.SetFloat("_MaxX", maxX);
+        sandCalibrator.SetFloat("_MinZ", minZ);
+        sandCalibrator.SetFloat("_MaxZ", maxZ);
 
         int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
         sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);

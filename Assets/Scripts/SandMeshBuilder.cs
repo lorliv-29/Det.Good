@@ -42,11 +42,14 @@ public class SandMeshBuilder : MonoBehaviour
                     int iTop = i + gridWidth;
                     int iTopRight = i + gridWidth + 1;
 
-                    // FILTER: Only draw triangles if ALL points are further away than 10cm (0.1f)
-                    // This ignores the broken (0,0,0) points stuck in the camera lens!
+                    // THE SPIKE FILTER: 
+                    // Only draw the triangle if the distance between the points is less than 5 centimeters (0.05f).
+                    // This automatically ignores broken points and laser beams, no matter how the camera is rotated!
+                    float maxEdge = 0.05f;
 
                     // Triangle 1
-                    if (vertices[i].z > 0.1f && vertices[iRight].z > 0.1f && vertices[iTop].z > 0.1f)
+                    if (Vector3.Distance(vertices[i], vertices[iRight]) < maxEdge &&
+                        Vector3.Distance(vertices[i], vertices[iTop]) < maxEdge)
                     {
                         triangles.Add(i);
                         triangles.Add(iTop);
@@ -54,7 +57,8 @@ public class SandMeshBuilder : MonoBehaviour
                     }
 
                     // Triangle 2
-                    if (vertices[iRight].z > 0.1f && vertices[iTop].z > 0.1f && vertices[iTopRight].z > 0.1f)
+                    if (Vector3.Distance(vertices[iRight], vertices[iTop]) < maxEdge &&
+                        Vector3.Distance(vertices[iTop], vertices[iTopRight]) < maxEdge)
                     {
                         triangles.Add(iRight);
                         triangles.Add(iTop);

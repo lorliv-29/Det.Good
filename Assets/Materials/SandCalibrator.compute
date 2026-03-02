@@ -7,6 +7,12 @@ RWStructuredBuffer<float3> CalibratedPoints;
 float4x4 _LocalToWorld;
 uint _VertexCount;
 
+// === THE BOUNDING BOX LIMITS ===
+float _MinX;
+float _MaxX;
+float _MinZ;
+float _MaxZ;
+
 [numthreads(64, 1, 1)]
 void CalibrateSand (uint3 id : SV_DispatchThreadID)
 {
@@ -15,8 +21,14 @@ void CalibrateSand (uint3 id : SV_DispatchThreadID)
     float3 rawPos = RawPoints[id.x];
 
     // Multiply the raw point by GameObject's Transform matrix
-    // Unity Rotation, Position, and Scale all at once
     float3 finalPos = mul(_LocalToWorld, float4(rawPos, 1.0)).xyz;
+
+    // === THE DIGITAL COOKIE CUTTER ===
+    // If the point is outside the edges of the sandbox, shoot it 1000 meters underground!
+    if (finalPos.x < _MinX || finalPos.x > _MaxX || finalPos.z < _MinZ || finalPos.z > _MaxZ)
+    {
+        finalPos = float3(0.0, -1000.0, 0.0);
+    }
 
     CalibratedPoints[id.x] = finalPos;
 }
