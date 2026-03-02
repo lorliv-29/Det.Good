@@ -101,7 +101,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _LineThickness: 0.1
-    - _MaxHeight: -0.76
+    - _MaxHeight: -0.74
     - _Metallic: 0
     - _MinHeight: -0.9
     - _OcclusionStrength: 1

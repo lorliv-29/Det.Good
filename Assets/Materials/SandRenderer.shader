@@ -126,12 +126,18 @@ Shader "Custom/SandRenderer"
                 StructuredBuffer<float3> CalibratedPoints;
             #endif
 
-            void setup() {
+           void setup() {
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 float3 pos = CalibratedPoints[unity_InstanceID];
                 unity_ObjectToWorld = 0.0;
+                
+                // 1. Set the Position
                 unity_ObjectToWorld._m03_m13_m23_m33 = float4(pos, 1.0);
-                unity_ObjectToWorld._m00_m11_m22 = _PointSize;
+                
+                // 2. Set the Scale AND Rotate 90 degrees so the Quad lies completely flat
+                unity_ObjectToWorld._m00 = _PointSize; 
+                unity_ObjectToWorld._m12 = -_PointSize; 
+                unity_ObjectToWorld._m21 = _PointSize;  
             #endif
             }
 
