@@ -8,13 +8,17 @@ Shader "Custom/SandRenderer"
         _PointSize ("Point Size", Float) = 0.05
         _MinHeight ("Water Height Level", Float) = 0.0 
         _MaxHeight ("Snow Height Level", Float) = 0.2 
+        
+        // NEW TOPOGRAPHY CONTROLS
+        _Steps ("Number of Terraces", Float) = 12.0
+        _LineThickness ("Contour Line Thickness", Range(0.0, 0.5)) = 0.1
     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
         LOD 100
 
-        // PASS 1: THE COLOR PASS (What your eyes see)
+        // PASS 1: THE COLOR PASS 
         Pass
         {
             Tags { "LightMode" = "UniversalForward" }
@@ -37,7 +41,7 @@ Shader "Custom/SandRenderer"
             };
 
             float4 _WaterColor, _SandColor, _SnowColor;
-            float _PointSize, _MinHeight, _MaxHeight;
+            float _PointSize, _MinHeight, _MaxHeight, _Steps, _LineThickness;
 
             #ifdef UNITY_PROCEDURAL_INSTANCING_ENABLED
                 StructuredBuffer<float3> CalibratedPoints;
@@ -66,18 +70,32 @@ Shader "Custom/SandRenderer"
             }
 
             fixed4 frag (v2f i) : SV_Target {
-                float h =  smoothstep(_MinHeight, _MaxHeight, i.worldPos.y);
+                // 1. Calculate linear height percentage (0.0 to 1.0)
+                float h = saturate((i.worldPos.y - _MinHeight) / (_MaxHeight - _MinHeight));
+                
+                // 2. Multiply by the number of terraces, then round down to make flat "steps"
+                float hScaled = h * _Steps;
+                float steppedH = floor(hScaled) / _Steps;
+
+                // 3. Blend the colors using the flat stepped height
                 fixed4 finalColor = lerp(
-                    lerp(_WaterColor, _SandColor, h * 2.0), 
-                    lerp(_SandColor, _SnowColor, (h - 0.5) * 2.0), 
-                    step(0.5, h)
+                    lerp(_WaterColor, _SandColor, steppedH * 2.0), 
+                    lerp(_SandColor, _SnowColor, (steppedH - 0.5) * 2.0), 
+                    step(0.5, steppedH)
                 );
+
+                // 4. Draw black contour lines 
+                if (frac(hScaled) < _LineThickness)
+                {
+                    finalColor = fixed4(0, 0, 0, 1); 
+                }
+
                 return finalColor;
             }
             ENDCG
         }
 
-        // PASS 2: THE DEPTH PASS (What the SSAO shadows see)
+        // PASS 2: THE DEPTH PASS 
         Pass
         {
             Name "DepthOnly"
@@ -126,7 +144,7 @@ Shader "Custom/SandRenderer"
             }
 
             fixed4 frag (v2f i) : SV_Target {
-                return 0; // We don't care about color here, just depth!
+                return 0; 
             }
             ENDCG
         }

@@ -6,12 +6,6 @@ public class SandTopographyManager : MonoBehaviour
 {
     public SandMeshBuilder meshBuilder;
 
-    [Header("Sandbox Cropping (World Space)")]
-    public float minX = -0.5f;
-    public float maxX = 0.5f;
-    public float minZ = -0.5f;
-    public float maxZ = 0.5f;
-
     [Header("RealSense Integration")]
     public RsFrameProvider Source;
 
@@ -22,13 +16,37 @@ public class SandTopographyManager : MonoBehaviour
     public Mesh sandGrainMesh;
     public Material sandMaterial;
 
+    [Header("Sandbox Cropping (World Space)")]
+    public float minX = -0.5f;
+    public float maxX = 0.5f;
+    public float minZ = -0.5f;
+    public float maxZ = 0.5f;
+
+    [Tooltip("The 'Ceiling'. Anything higher than this is instantly deleted. Perfect for hiding arms!")]
+    public float maxY = 0.9f;
+
+    // === STABILITY CONTROLS ===
+    [Header("Mesh Stability (Temporal Smoothing)")]
+    [Range(0.8f, 0.99f)]
+    [Tooltip("A higher number blends more frames together, making it more stable but creating a slight 'ghosting' delay. (0.95 is ideal)")]
+    public float smoothingFactor = 0.95f;
+    [Range(0.005f, 0.1f)]
+    [Tooltip("If a point moves further than this distance (in meters) in one frame, it snaps instantly. 0.02 is 2cm.")]
+    public float movementThreshold = 0.02f;
+    [Tooltip("If an object is moving fast AND is higher than this Y value, the shader ignores it (filters hands).")]
+    public float handHeightMin = 0.3f;
+
     private ComputeBuffer rawBuffer;
     public ComputeBuffer calibratedBuffer { get; private set; }
+    private ComputeBuffer smoothedPreviousBuffer; // The GPU memory
 
     private Vector3[] sandVertices;
     private int vertexCount = 0;
     private FrameQueue frameQueue;
+
+    // Kernels
     private int calibrateKernel;
+    private int smoothKernel;
 
     private bool isEditMode = true;
 
@@ -46,14 +64,16 @@ public class SandTopographyManager : MonoBehaviour
     private void OnStartStreaming(PipelineProfile profile)
     {
         frameQueue = new FrameQueue(1);
+
+        // Find both kernels now
         calibrateKernel = sandCalibrator.FindKernel("CalibrateSand");
+        smoothKernel = sandCalibrator.FindKernel("TemporalSmooth");
+
         Source.OnNewSample += OnNewSample;
     }
 
     private void OnNewSample(Frame frame)
     {
-        // === THE SOFTWARE PAUSE ===
-        // If we are in Play Mode, instantly drop the camera frame to save CPU power!
         if (frameQueue == null || !isEditMode) return;
 
         if (frame.IsComposite)
@@ -78,7 +98,6 @@ public class SandTopographyManager : MonoBehaviour
 
             if (!isEditMode)
             {
-                Debug.Log("Switched to PLAY MODE. Freezing sand & pausing camera...");
                 if (meshBuilder != null && calibratedBuffer != null)
                 {
                     meshBuilder.gameObject.SetActive(true);
@@ -87,7 +106,6 @@ public class SandTopographyManager : MonoBehaviour
             }
             else
             {
-                Debug.Log("Switched to EDIT MODE. Hologram & camera active...");
                 if (meshBuilder != null)
                 {
                     meshBuilder.gameObject.SetActive(false);
@@ -95,7 +113,6 @@ public class SandTopographyManager : MonoBehaviour
             }
         }
 
-        // === ONLY PROCESS HEAVY MATH IN EDIT MODE ===
         if (isEditMode && frameQueue != null)
         {
             Points points;
@@ -110,17 +127,21 @@ public class SandTopographyManager : MonoBehaviour
                             vertexCount = points.Count;
                             sandVertices = new Vector3[vertexCount];
 
+                            // Release old buffers
                             if (rawBuffer != null) rawBuffer.Release();
                             if (calibratedBuffer != null) calibratedBuffer.Release();
+                            if (smoothedPreviousBuffer != null) smoothedPreviousBuffer.Release();
 
+                            // ALLOCATE THE NEW MEMORY BUFFER (12 bytes per Vector3)
                             rawBuffer = new ComputeBuffer(vertexCount, 12);
                             calibratedBuffer = new ComputeBuffer(vertexCount, 12);
+                            smoothedPreviousBuffer = new ComputeBuffer(vertexCount, 12);
                         }
 
                         points.CopyVertices(sandVertices);
                         rawBuffer.SetData(sandVertices);
 
-                        RunComputeShader(); // This heavy GPU call now only runs in Edit Mode!
+                        RunComputeShaderSequentially();
                     }
                 }
             }
@@ -134,24 +155,39 @@ public class SandTopographyManager : MonoBehaviour
         }
     }
 
-    private void RunComputeShader()
+    private void RunComputeShaderSequentially()
     {
-        if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null) return;
+        if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null || smoothedPreviousBuffer == null) return;
 
+        // 1. Prepare KERNEL 1 (Transformation and Cropping)
         sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
         sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
-
         sandCalibrator.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
 
-        // SEND THE BOUNDING BOX LIMITS TO THE GPU
         sandCalibrator.SetFloat("_MinX", minX);
         sandCalibrator.SetFloat("_MaxX", maxX);
         sandCalibrator.SetFloat("_MinZ", minZ);
         sandCalibrator.SetFloat("_MaxZ", maxZ);
+        // === SEND CEILING TO GPU ===
+        sandCalibrator.SetFloat("_MaxY", maxY);
 
+        // Run Kernel 1 (Writes transform points to calibratedBuffer)
         int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
         sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);
+
+        // 2. Prepare KERNEL 2 (The Stabilizer)
+        sandCalibrator.SetBuffer(smoothKernel, "CalibratedPoints", calibratedBuffer);
+        sandCalibrator.SetBuffer(smoothKernel, "SmoothedPointsPrevious", smoothedPreviousBuffer);
+        sandCalibrator.SetFloat("_SmoothingFactor", smoothingFactor);
+        sandCalibrator.SetFloat("_MovementThreshold", movementThreshold);
+        // === SEND HYBRID HAND FILTER TO GPU ===
+        sandCalibrator.SetFloat("_HandHeightMin", handHeightMin);
+
+        sandCalibrator.SetInt("_VertexCount", vertexCount);
+
+        // Run Kernel 2 (Writes stabilized points to calibratedBuffer)
+        sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
     }
 
     private void Dispose()
@@ -173,6 +209,11 @@ public class SandTopographyManager : MonoBehaviour
         {
             calibratedBuffer.Release();
             calibratedBuffer = null;
+        }
+        if (smoothedPreviousBuffer != null)
+        {
+            smoothedPreviousBuffer.Release();
+            smoothedPreviousBuffer = null;
         }
     }
 
