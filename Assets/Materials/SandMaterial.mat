@@ -25,8 +25,13 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _PointSize: 0.001
+    - _MaxHeight: 0.9
+    - _MinHeight: 0.74
+    - _PointSize: 0.0025
     m_Colors:
     - _Color: {r: 0.9019608, g: 0.7863482, b: 0.6, a: 1}
+    - _SandColor: {r: 0.44635153, g: 0.654088, b: 0.3558403, a: 1}
+    - _SnowColor: {r: 0.93710685, g: 0.41156375, b: 0.33889067, a: 1}
+    - _WaterColor: {r: 0, g: 0.10500537, b: 0.49685526, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
