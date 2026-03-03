@@ -93,27 +93,12 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
-        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        // 1. Check for Controller OR Keyboard input
+        if (OVRInput.GetDown(OVRInput.Button.One) || (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame))
         {
-            isEditMode = !isEditMode;
-
-            if (!isEditMode)
-            {
-                if (meshBuilder != null && calibratedBuffer != null)
-                {
-                    meshBuilder.gameObject.SetActive(true);
-                    meshBuilder.GeneratePhysicalMesh(calibratedBuffer);
-                }
-            }
-            else
-            {
-                if (meshBuilder != null)
-                {
-                    meshBuilder.gameObject.SetActive(false);
-                }
-            }
+            ToggleMeshMode();
         }
-
+        // 2. Process point cloud if we are in Edit Mode
         if (isEditMode && frameQueue != null)
         {
             Points points;
@@ -148,6 +133,7 @@ public class SandTopographyManager : MonoBehaviour
             }
         }
 
+        // 3. Draw the active point cloud hologram
         if (isEditMode && calibratedBuffer != null && sandGrainMesh != null && sandMaterial != null && vertexCount > 0)
         {
             sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
@@ -189,6 +175,27 @@ public class SandTopographyManager : MonoBehaviour
 
         // Run Kernel 2 (Writes stabilized points to calibratedBuffer)
         sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
+    }
+
+    public void ToggleMeshMode()
+    {
+        isEditMode = !isEditMode;
+
+        if (!isEditMode)
+        {
+            if (meshBuilder != null && calibratedBuffer != null)
+            {
+                meshBuilder.gameObject.SetActive(true);
+                meshBuilder.GeneratePhysicalMesh(calibratedBuffer);
+            }
+        }
+        else
+        {
+            if (meshBuilder != null)
+            {
+                meshBuilder.gameObject.SetActive(false);
+            }
+        }
     }
 
     private void Dispose()
