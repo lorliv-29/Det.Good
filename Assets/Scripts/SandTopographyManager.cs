@@ -7,6 +7,8 @@ public class SandTopographyManager : MonoBehaviour
 {
     public SandMeshBuilder meshBuilder;
 
+    public Transform sandboxParent;
+
     [Header("RealSense Integration")]
     public RsFrameProvider Source;
 
