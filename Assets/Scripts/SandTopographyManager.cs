@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Intel.RealSense;
 using System.Linq;
 
@@ -92,7 +93,7 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             isEditMode = !isEditMode;
 
