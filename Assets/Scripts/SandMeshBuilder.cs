@@ -33,7 +33,7 @@ public class SandMeshBuilder : MonoBehaviour
             System.Collections.Generic.List<int> triangles = new System.Collections.Generic.List<int>();
 
             // 4. Stitch the points together (WITH ZERO-DEPTH FILTER)
-            for (int y = 0; y < gridHeight - 1; y++)
+            for (int y = 0; y < gridHeight - 1; y++) 
             {
                 for (int x = 0; x < gridWidth - 1; x++)
                 {
@@ -65,6 +65,14 @@ public class SandMeshBuilder : MonoBehaviour
                         triangles.Add(iTopRight);
                     }
                 }
+            }
+
+            // === THE TRANSFORM solution ===
+           // Convert the points into the Local Space of this specific GameObject.
+            // This perfectly subtracts any scale, rotation, or position applied to the parent!
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                vertices[i] = transform.InverseTransformPoint(vertices[i]);
             }
 
             // 5. Build the Unity Mesh
