@@ -101,9 +101,9 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _LineThickness: 0.1
-    - _MaxHeight: -0.74
+    - _MaxHeight: 1.1
     - _Metallic: 0
-    - _MinHeight: -0.9
+    - _MinHeight: 0.94
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _QueueOffset: 0
