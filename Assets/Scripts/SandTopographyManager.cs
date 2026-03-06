@@ -6,7 +6,6 @@ using System.Linq;
 public class SandTopographyManager : MonoBehaviour
 {
     public SandMeshBuilder meshBuilder;
-
     public Transform sandboxParent;
 
     [Header("RealSense Integration")]
@@ -25,33 +24,29 @@ public class SandTopographyManager : MonoBehaviour
     public float minZ = -0.5f;
     public float maxZ = 0.5f;
 
-    [Tooltip("The 'Ceiling'. Anything higher than this is instantly deleted. Perfect for hiding arms!")]
+    [Tooltip("The Ceiling. Anything higher than this is instantly deleted. Perfect for hiding arms!")]
     public float maxY = 0.9f;
 
-    // === STABILITY CONTROLS ===
     [Header("Mesh Stability (Temporal Smoothing)")]
     [Range(0.8f, 0.99f)]
-    [Tooltip("A higher number blends more frames together, making it more stable but creating a slight 'ghosting' delay. (0.95 is ideal)")]
     public float smoothingFactor = 0.95f;
     [Range(0.005f, 0.1f)]
-    [Tooltip("If a point moves further than this distance (in meters) in one frame, it snaps instantly. 0.02 is 2cm.")]
     public float movementThreshold = 0.02f;
     [Tooltip("If an object is moving fast AND is higher than this Y value, the shader ignores it (filters hands).")]
     public float handHeightMin = 0.3f;
 
     private ComputeBuffer rawBuffer;
     public ComputeBuffer calibratedBuffer { get; private set; }
-    private ComputeBuffer smoothedPreviousBuffer; // The GPU memory
+    private ComputeBuffer smoothedPreviousBuffer;
 
     private Vector3[] sandVertices;
     private int vertexCount = 0;
     private FrameQueue frameQueue;
 
-    // Kernels
     private int calibrateKernel;
     private int smoothKernel;
 
-    private bool isEditMode = true;
+    public bool isEditMode = true;
 
     void Start()
     {
@@ -67,11 +62,8 @@ public class SandTopographyManager : MonoBehaviour
     private void OnStartStreaming(PipelineProfile profile)
     {
         frameQueue = new FrameQueue(1);
-
-        // Find both kernels now
         calibrateKernel = sandCalibrator.FindKernel("CalibrateSand");
         smoothKernel = sandCalibrator.FindKernel("TemporalSmooth");
-
         Source.OnNewSample += OnNewSample;
     }
 
@@ -95,12 +87,12 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
-        // 1. Check for Controller OR Keyboard input
-        if (OVRInput.GetDown(OVRInput.Button.One) || (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame))
+        // Check for Keyboard space key as a fallback for the OVR Input
+        if ((UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame))
         {
             ToggleMeshMode();
         }
-        // 2. Process point cloud if we are in Edit Mode
+
         if (isEditMode && frameQueue != null)
         {
             Points points;
@@ -115,12 +107,10 @@ public class SandTopographyManager : MonoBehaviour
                             vertexCount = points.Count;
                             sandVertices = new Vector3[vertexCount];
 
-                            // Release old buffers
                             if (rawBuffer != null) rawBuffer.Release();
                             if (calibratedBuffer != null) calibratedBuffer.Release();
                             if (smoothedPreviousBuffer != null) smoothedPreviousBuffer.Release();
 
-                            // ALLOCATE THE NEW MEMORY BUFFER (12 bytes per Vector3)
                             rawBuffer = new ComputeBuffer(vertexCount, 12);
                             calibratedBuffer = new ComputeBuffer(vertexCount, 12);
                             smoothedPreviousBuffer = new ComputeBuffer(vertexCount, 12);
@@ -128,14 +118,12 @@ public class SandTopographyManager : MonoBehaviour
 
                         points.CopyVertices(sandVertices);
                         rawBuffer.SetData(sandVertices);
-
                         RunComputeShaderSequentially();
                     }
                 }
             }
         }
 
-        // 3. Draw the active point cloud hologram
         if (isEditMode && calibratedBuffer != null && sandGrainMesh != null && sandMaterial != null && vertexCount > 0)
         {
             sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
@@ -148,7 +136,6 @@ public class SandTopographyManager : MonoBehaviour
     {
         if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null || smoothedPreviousBuffer == null) return;
 
-        // 1. Prepare KERNEL 1 (Transformation and Cropping)
         sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
         sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
         sandCalibrator.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
@@ -158,24 +145,18 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_MaxX", maxX);
         sandCalibrator.SetFloat("_MinZ", minZ);
         sandCalibrator.SetFloat("_MaxZ", maxZ);
-        // === SEND CEILING TO GPU ===
         sandCalibrator.SetFloat("_MaxY", maxY);
 
-        // Run Kernel 1 (Writes transform points to calibratedBuffer)
         int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
         sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);
 
-        // 2. Prepare KERNEL 2 (The Stabilizer)
         sandCalibrator.SetBuffer(smoothKernel, "CalibratedPoints", calibratedBuffer);
         sandCalibrator.SetBuffer(smoothKernel, "SmoothedPointsPrevious", smoothedPreviousBuffer);
         sandCalibrator.SetFloat("_SmoothingFactor", smoothingFactor);
         sandCalibrator.SetFloat("_MovementThreshold", movementThreshold);
-        // === SEND HYBRID HAND FILTER TO GPU ===
         sandCalibrator.SetFloat("_HandHeightMin", handHeightMin);
-
         sandCalibrator.SetInt("_VertexCount", vertexCount);
 
-        // Run Kernel 2 (Writes stabilized points to calibratedBuffer)
         sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
     }
 
@@ -210,21 +191,9 @@ public class SandTopographyManager : MonoBehaviour
             frameQueue = null;
         }
 
-        if (rawBuffer != null)
-        {
-            rawBuffer.Release();
-            rawBuffer = null;
-        }
-        if (calibratedBuffer != null)
-        {
-            calibratedBuffer.Release();
-            calibratedBuffer = null;
-        }
-        if (smoothedPreviousBuffer != null)
-        {
-            smoothedPreviousBuffer.Release();
-            smoothedPreviousBuffer = null;
-        }
+        if (rawBuffer != null) { rawBuffer.Release(); rawBuffer = null; }
+        if (calibratedBuffer != null) { calibratedBuffer.Release(); calibratedBuffer = null; }
+        if (smoothedPreviousBuffer != null) { smoothedPreviousBuffer.Release(); smoothedPreviousBuffer = null; }
     }
 
     void OnDestroy()

@@ -5,6 +5,28 @@ TagManager:
   serializedVersion: 3
   tags:
   - Anchor
+  - QDSUIBackplateGradient
+  - QDSUISection
+  - QDSUIIcon
+  - QDSUISharedThemeColor
+  - QDSUITooltip
+  - QDSUIToggleButton
+  - QDSUITextSecondaryColor
+  - QDSUISecondaryButton
+  - QDSUIPrimaryButton
+  - QDSUIAccentColor
+  - QDSUITextInvertedColor
+  - QDSUITextSecondaryInvertedColor
+  - QDSUIToggleSwitch
+  - QDSUIBackplate
+  - QDSUIBorderlessButton
+  - QDSUITextInputField
+  - QDSUIDestructiveButton
+  - QDSUIToggleCheckboxRadio
+  - QDSUIToggleBorderlessButton
+  - House
+  - Farm
+  - People
   layers:
   - Default
   - TransparentFX
