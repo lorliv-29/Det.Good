@@ -20,7 +20,7 @@ public class SandMeshBuilder : MonoBehaviour
     public float invalidYThreshold = -500f;
 
     [Tooltip("Only stitch points together if edges are shorter than this.")]
-    public float maxEdge = 0.08f;
+    public float maxEdge = 0.1f;
 
     public void GeneratePhysicalMesh(ComputeBuffer pointBuffer)
     {

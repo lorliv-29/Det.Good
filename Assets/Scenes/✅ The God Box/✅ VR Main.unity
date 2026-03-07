@@ -6354,13 +6354,13 @@ MonoBehaviour:
   - {fileID: 3424096748225499574, guid: 70029007768ff2247a30d53b88a12d56, type: 3}
   - {fileID: 8087529959932460667, guid: b198b5795b6f51740a0bb7c715439520, type: 3}
   peoplePerHouse: 2
-  spawnRadiusAroundHouse: 3
-  maxSpawnSearchDistance: 50
+  spawnRadiusAroundHouse: 0.15
+  maxSpawnSearchDistance: 0.5
   attemptsPerPerson: 10
-  raycastHeight: 50
+  raycastHeight: 2
   groundMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 8
 --- !u!4 &140184105
 Transform:
   m_ObjectHideFlags: 0
@@ -26971,7 +26971,7 @@ MonoBehaviour:
   m_IgnoreNavMeshAgent: 1
   m_IgnoreNavMeshObstacle: 1
   m_OverrideTileSize: 1
-  m_TileSize: 64
+  m_TileSize: 32
   m_OverrideVoxelSize: 1
   m_VoxelSize: 0.01
   m_MinRegionArea: 0
@@ -52564,7 +52564,7 @@ PrefabInstance:
     - target: {fileID: 1133339684047590491, guid: 015d50c6ae209554ca438fae7e311d27, type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgument
       value: 
-      objectReference: {fileID: 7327742237053989760, guid: aef40af3f36deff48b50013286cd8b78, type: 3}
+      objectReference: {fileID: 2032362960278117594, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
     - target: {fileID: 1133339684047590491, guid: 015d50c6ae209554ca438fae7e311d27, type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.GameObject, UnityEngine
