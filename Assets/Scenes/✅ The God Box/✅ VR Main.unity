@@ -26943,6 +26943,8 @@ MonoBehaviour:
   referenceTransform: {fileID: 0}
   gridWidth: 640
   gridHeight: 480
+  invalidYThreshold: -500
+  maxEdge: 0.05
 --- !u!114 &695720139
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26972,7 +26974,7 @@ MonoBehaviour:
   m_TileSize: 64
   m_OverrideVoxelSize: 1
   m_VoxelSize: 0.01
-  m_MinRegionArea: 0.1
+  m_MinRegionArea: 0
   m_NavMeshData: {fileID: 0}
   m_BuildHeightMesh: 0
 --- !u!1 &695895895
@@ -63001,6 +63003,83 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3315583781552747177, guid: 5292db714b0f87045a7dfd9be93b1be5, type: 3}
   m_PrefabInstance: {fileID: 1535342751}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1537513389
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2032362960278117594, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_Name
+      value: Camp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2032362960278117594, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_TagString
+      value: House
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.551
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.315
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.037
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2158619414319687721, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 545b155c315c21148b06359d33cf75b3, type: 3}
 --- !u!1 &1538431419
 GameObject:
   m_ObjectHideFlags: 0
@@ -101828,3 +101907,4 @@ SceneRoots:
   - {fileID: 1904671531}
   - {fileID: 140184105}
   - {fileID: 698906688}
+  - {fileID: 1537513389}

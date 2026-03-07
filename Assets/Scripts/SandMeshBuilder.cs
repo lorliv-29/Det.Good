@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -14,10 +15,15 @@ public class SandMeshBuilder : MonoBehaviour
     [Tooltip("Camera height divided by decimation filter magnitude")]
     public int gridHeight = 120;
 
-    // Call this method from your main script when you want to freeze the sand
+    [Header("Mesh Cleanup")]
+    [Tooltip("Anything below this is considered invalid/hidden terrain.")]
+    public float invalidYThreshold = -500f;
+
+    [Tooltip("Only stitch points together if edges are shorter than this.")]
+    public float maxEdge = 0.08f;
+
     public void GeneratePhysicalMesh(ComputeBuffer pointBuffer)
     {
-        // 1. The Async Request: Ask the GPU for the data without freezing the game
         AsyncGPUReadback.Request(pointBuffer, request =>
         {
             if (request.hasError)
@@ -26,15 +32,13 @@ public class SandMeshBuilder : MonoBehaviour
                 return;
             }
 
-            // 2. Extract the raw 3D coordinates (Vertices) from the GPU
             var gpuData = request.GetData<Vector3>();
-            Vector3[] vertices = gpuData.ToArray();
+            Vector3[] worldVertices = gpuData.ToArray();
 
-            // 3. Prepare the Triangles list (Using a List instead of an Array so we can skip bad triangles)
-            System.Collections.Generic.List<int> triangles = new System.Collections.Generic.List<int>();
+            List<int> triangles = new List<int>();
 
-            // 4. Stitch the points together (WITH ZERO-DEPTH FILTER)
-            for (int y = 0; y < gridHeight - 1; y++) 
+            // Build triangles only from valid points
+            for (int y = 0; y < gridHeight - 1; y++)
             {
                 for (int x = 0; x < gridWidth - 1; x++)
                 {
@@ -43,14 +47,18 @@ public class SandMeshBuilder : MonoBehaviour
                     int iTop = i + gridWidth;
                     int iTopRight = i + gridWidth + 1;
 
-                    // THE SPIKE FILTER: 
-                    // Only draw the triangle if the distance between the points is less than 5 centimeters (0.05f).
-                    // This automatically ignores broken points and laser beams, no matter how the camera is rotated!
-                    float maxEdge = 0.05f;
+                    // Skip any quad touching invalid underground points
+                    if (worldVertices[i].y < invalidYThreshold ||
+                        worldVertices[iRight].y < invalidYThreshold ||
+                        worldVertices[iTop].y < invalidYThreshold ||
+                        worldVertices[iTopRight].y < invalidYThreshold)
+                    {
+                        continue;
+                    }
 
                     // Triangle 1
-                    if (Vector3.Distance(vertices[i], vertices[iRight]) < maxEdge &&
-                        Vector3.Distance(vertices[i], vertices[iTop]) < maxEdge)
+                    if (Vector3.Distance(worldVertices[i], worldVertices[iRight]) < maxEdge &&
+                        Vector3.Distance(worldVertices[i], worldVertices[iTop]) < maxEdge)
                     {
                         triangles.Add(i);
                         triangles.Add(iTop);
@@ -58,8 +66,8 @@ public class SandMeshBuilder : MonoBehaviour
                     }
 
                     // Triangle 2
-                    if (Vector3.Distance(vertices[iRight], vertices[iTop]) < maxEdge &&
-                        Vector3.Distance(vertices[iTop], vertices[iTopRight]) < maxEdge)
+                    if (Vector3.Distance(worldVertices[iRight], worldVertices[iTop]) < maxEdge &&
+                        Vector3.Distance(worldVertices[iTop], worldVertices[iTopRight]) < maxEdge)
                     {
                         triangles.Add(iRight);
                         triangles.Add(iTop);
@@ -68,31 +76,47 @@ public class SandMeshBuilder : MonoBehaviour
                 }
             }
 
-            // === THE TRANSFORM solution ===
-            // Convert the points into the Local Space of this specific GameObject.
-            // This perfectly subtracts any scale, rotation, or position applied to the parent!
+            // Use chosen reference transform for local conversion
             Transform t = referenceTransform != null ? referenceTransform : transform;
 
-            for (int i = 0; i < vertices.Length; i++)
+            // Compact the mesh so ONLY used vertices survive
+            Dictionary<int, int> oldToNew = new Dictionary<int, int>();
+            List<Vector3> compactVertices = new List<Vector3>();
+            List<int> compactTriangles = new List<int>();
+
+            for (int tri = 0; tri < triangles.Count; tri++)
             {
-                vertices[i] = t.InverseTransformPoint(vertices[i]);
+                int oldIndex = triangles[tri];
+
+                if (!oldToNew.TryGetValue(oldIndex, out int newIndex))
+                {
+                    newIndex = compactVertices.Count;
+                    oldToNew[oldIndex] = newIndex;
+
+                    Vector3 localVertex = t.InverseTransformPoint(worldVertices[oldIndex]);
+                    compactVertices.Add(localVertex);
+                }
+
+                compactTriangles.Add(newIndex);
             }
 
-            // 5. Build the Unity Mesh
             Mesh solidMesh = new Mesh();
             solidMesh.indexFormat = IndexFormat.UInt32;
-            solidMesh.vertices = vertices;
-            solidMesh.triangles = triangles.ToArray(); // Convert our filtered list back to an array
-
-
-            // 6. Calculate lighting normals so shadows work properly
+            solidMesh.vertices = compactVertices.ToArray();
+            solidMesh.triangles = compactTriangles.ToArray();
             solidMesh.RecalculateNormals();
+            solidMesh.RecalculateBounds();
 
-            // 7. Apply the mesh to the visual filter and the physical collider
-            if (meshFilter != null) meshFilter.mesh = solidMesh;
-            if (meshCollider != null) meshCollider.sharedMesh = solidMesh;
+            if (meshFilter != null)
+                meshFilter.mesh = solidMesh;
 
-            Debug.Log("Physical Sand Mesh Generated Successfully!");
+            if (meshCollider != null)
+            {
+                meshCollider.sharedMesh = null;
+                meshCollider.sharedMesh = solidMesh;
+            }
+
+            Debug.Log($"Physical Sand Mesh Generated Successfully! Vertices={compactVertices.Count}, Triangles={compactTriangles.Count / 3}");
         });
     }
 }
