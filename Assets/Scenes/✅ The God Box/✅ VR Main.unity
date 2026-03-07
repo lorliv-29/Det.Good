@@ -26825,7 +26825,7 @@ GameObject:
   - component: {fileID: 695720134}
   - component: {fileID: 695720138}
   - component: {fileID: 695720139}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PhysicalSandMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -26956,23 +26956,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
   m_SerializedVersion: 0
-  m_AgentTypeID: 0
-  m_CollectObjects: 0
+  m_AgentTypeID: -1372625422
+  m_CollectObjects: 2
   m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 2, z: 0}
   m_LayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
-  m_UseGeometry: 0
+    m_Bits: 8
+  m_UseGeometry: 1
   m_DefaultArea: 0
   m_GenerateLinks: 0
   m_IgnoreNavMeshAgent: 1
   m_IgnoreNavMeshObstacle: 1
-  m_OverrideTileSize: 0
-  m_TileSize: 256
-  m_OverrideVoxelSize: 0
-  m_VoxelSize: 0.16666667
-  m_MinRegionArea: 2
+  m_OverrideTileSize: 1
+  m_TileSize: 64
+  m_OverrideVoxelSize: 1
+  m_VoxelSize: 0.01
+  m_MinRegionArea: 0.1
   m_NavMeshData: {fileID: 0}
   m_BuildHeightMesh: 0
 --- !u!1 &695895895
@@ -37371,6 +37371,7 @@ Transform:
   - {fileID: 1372894830}
   - {fileID: 1869634251}
   - {fileID: 695720137}
+  - {fileID: 1783121407}
   - {fileID: 1610434507}
   - {fileID: 309180109}
   m_Father: {fileID: 0}
@@ -69681,7 +69682,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1783121407
 Transform:
   m_ObjectHideFlags: 0
@@ -69690,9 +69691,9 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1783121406}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.7836, y: 1.686, z: -0.2166}
-  m_LocalScale: {x: 0.02, y: 0.02, z: 0.02}
+  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 0.108299956, y: -0.3020001, z: 0.39180005}
+  m_LocalScale: {x: 0.009999997, y: 0.01, z: 0.009999997}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 838199973}
@@ -69702,7 +69703,7 @@ Transform:
   - {fileID: 2001972983}
   - {fileID: 1943287356}
   - {fileID: 1081267846}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1052052255}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1788547994
 PrefabInstance:
@@ -73995,7 +73996,7 @@ MonoBehaviour:
   currentPhase: 0
   topographyManager: {fileID: 1372894829}
   PhysicalSandMeshObject: {fileID: 695720133}
-  EcosystemManager: {fileID: 140184100}
+  EcosystemManager: {fileID: 0}
 --- !u!1001 &1908905056
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -101826,5 +101827,4 @@ SceneRoots:
   - {fileID: 1771502518}
   - {fileID: 1904671531}
   - {fileID: 140184105}
-  - {fileID: 1783121407}
   - {fileID: 698906688}
