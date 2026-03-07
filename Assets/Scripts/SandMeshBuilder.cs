@@ -6,6 +6,7 @@ public class SandMeshBuilder : MonoBehaviour
     [Header("Assign in Inspector")]
     public MeshFilter meshFilter;
     public MeshCollider meshCollider;
+    public Transform referenceTransform;
 
     [Header("Grid Dimensions")]
     [Tooltip("Camera width divided by decimation filter magnitude")]
@@ -68,11 +69,13 @@ public class SandMeshBuilder : MonoBehaviour
             }
 
             // === THE TRANSFORM solution ===
-           // Convert the points into the Local Space of this specific GameObject.
+            // Convert the points into the Local Space of this specific GameObject.
             // This perfectly subtracts any scale, rotation, or position applied to the parent!
+            Transform t = referenceTransform != null ? referenceTransform : transform;
+
             for (int i = 0; i < vertices.Length; i++)
             {
-                vertices[i] = transform.InverseTransformPoint(vertices[i]);
+                vertices[i] = t.InverseTransformPoint(vertices[i]);
             }
 
             // 5. Build the Unity Mesh

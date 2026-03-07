@@ -21,6 +21,9 @@ void CalibrateSand (uint3 id : SV_DispatchThreadID)
 
     float3 rawPos = RawPoints[id.x];
 
+    // Flip X to match physical left/right with Unity world
+    rawPos.x = -rawPos.x;
+
     // 1. Filter dead camera pixels (Hardware noise)
     if (rawPos.z < 0.01) 
     {

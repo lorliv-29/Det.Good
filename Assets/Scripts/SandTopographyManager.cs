@@ -117,6 +117,7 @@ public class SandTopographyManager : MonoBehaviour
                         }
 
                         points.CopyVertices(sandVertices);
+                      
                         rawBuffer.SetData(sandVertices);
                         RunComputeShaderSequentially();
                     }
