@@ -5,8 +5,12 @@ public class UIPlatformSpawner : MonoBehaviour
     [Header("Placement Settings")]
     public Transform previewPlatform;
 
+    [Header("Spawn Scale")]
+    public float spawnScale = 0.15f;
+
     private GameObject currentPreview;
     private GameObject lastSelectedPrefab;
+
     public void SpawnFromCategory(GameObject prefab)
     {
         lastSelectedPrefab = prefab;
@@ -24,6 +28,8 @@ public class UIPlatformSpawner : MonoBehaviour
         {
             currentPreview = Instantiate(lastSelectedPrefab, previewPlatform.position, previewPlatform.rotation);
 
+            currentPreview.transform.localScale = Vector3.one * spawnScale;
+
             Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
             if (rb != null) rb.isKinematic = true;
         }
@@ -31,11 +37,9 @@ public class UIPlatformSpawner : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-       
         if (currentPreview != null && other.gameObject == currentPreview)
         {
             currentPreview = null;
-
             Invoke("RefreshPlatform", 0.1f);
         }
     }
