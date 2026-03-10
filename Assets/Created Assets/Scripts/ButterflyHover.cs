@@ -9,18 +9,32 @@ public class ButterflyHoverWander : MonoBehaviour
     [Tooltip("Assigned by spawner. If null, butterfly will try to find one.")]
     public Transform orbitCenter;
 
+    [Header("World Bounds (around spawn point)")]
+    [Tooltip("Allowed half-width on X from spawn/home position.")]
+    public float territoryHalfX = 1.5f;
+
+    [Tooltip("Allowed half-depth on Z from spawn/home position.")]
+    public float territoryHalfZ = 1f;
+
     [Header("Orbit")]
-    public float orbitRadius = 2f;
-    public float orbitSpeedDegPerSec = 50f;
+    public float orbitRadius = 0.12f;
+    public float orbitSpeedDegPerSec = 35f;
 
     [Header("Hover")]
-    public float baseHeight = 5f;     // your “up by 5”
-    public float bobAmount = 0.4f;
-    public float bobSpeed = 2f;
+    [Tooltip("Base hover height above the flower pivot.")]
+    public float baseHeight = 0.03f;
+
+    [Tooltip("Extra offset applied to hover height. Use negative values to push butterflies lower.")]
+    public float hoverHeightOffset = -0.12f;
+
+    [Tooltip("Vertical hover variation.")]
+    public float bobAmount = 0.015f;
+
+    public float bobSpeed = 1.5f;
 
     [Header("Wander Between Flowers")]
     [Tooltip("How far to search for a new flower target.")]
-    public float switchSearchRadius = 15f;
+    public float switchSearchRadius = 1.5f;
 
     [Tooltip("How often (seconds) it considers switching flowers.")]
     public Vector2 switchIntervalRange = new Vector2(2.5f, 6f);
@@ -31,21 +45,21 @@ public class ButterflyHoverWander : MonoBehaviour
 
     [Header("Travel")]
     [Tooltip("How fast it moves its center from one flower to the next.")]
-    public float travelSpeed = 2.5f;
+    public float travelSpeed = 0.6f;
 
     [Tooltip("Extra random drift added to avoid perfect circles.")]
-    public float driftAmount = 0.6f;
+    public float driftAmount = 0.04f;
 
     [Tooltip("How quickly it rotates to face direction of travel.")]
     public float turnSmoothing = 6f;
 
-    // internal state
     float angleDeg;
     float direction;
 
-    Vector3 virtualCenter;         // where we're orbiting *right now* (moves between flowers)
+    Vector3 virtualCenter;
     Vector3 driftOffset;
     float nextSwitchTime;
+    Vector3 homePosition;
 
     void Awake()
     {
@@ -58,6 +72,8 @@ public class ButterflyHoverWander : MonoBehaviour
 
     void Start()
     {
+        homePosition = transform.position;
+
         if (orbitCenter == null)
         {
             orbitCenter = FindNearestFlower(transform.position);
@@ -65,60 +81,58 @@ public class ButterflyHoverWander : MonoBehaviour
 
         if (orbitCenter != null)
         {
-            virtualCenter = orbitCenter.position;
+            virtualCenter = ClampToTerritory(orbitCenter.position);
         }
         else
         {
-            // No flowers found: just hover where you spawned.
-            virtualCenter = transform.position;
+            virtualCenter = ClampToTerritory(transform.position);
         }
 
         ScheduleNextSwitch();
-        transform.position = ComputeTargetPosition();
+        transform.position = ClampToTerritoryWithHeight(ComputeTargetPosition());
     }
 
     void Update()
     {
-        // Smoothly move the virtual center toward the current flower
         if (orbitCenter != null)
         {
+            Vector3 targetCenter = ClampToTerritory(orbitCenter.position);
+
             virtualCenter = Vector3.MoveTowards(
                 virtualCenter,
-                orbitCenter.position,
+                targetCenter,
                 travelSpeed * Time.deltaTime
             );
+
+            virtualCenter = ClampToTerritory(virtualCenter);
         }
 
-        // Occasionally pick a different flower
         if (Time.time >= nextSwitchTime)
         {
             if (Random.value < switchChance)
             {
                 Transform next = PickNearbyFlower();
-                if (next != null) orbitCenter = next;
+                if (next != null)
+                    orbitCenter = next;
 
-                // Small random drift change so it doesn't look like a robot on rails
                 driftOffset = Random.insideUnitSphere * driftAmount;
                 driftOffset.y = 0f;
 
-                // Sometimes flip orbit direction
-                if (Random.value < 0.35f) direction *= -1f;
+                if (Random.value < 0.35f)
+                    direction *= -1f;
             }
 
             ScheduleNextSwitch();
         }
 
-        // Orbit motion
         angleDeg += orbitSpeedDegPerSec * direction * Time.deltaTime;
 
-        Vector3 target = ComputeTargetPosition();
+        Vector3 target = ClampToTerritoryWithHeight(ComputeTargetPosition());
 
-        // Move
         Vector3 prev = transform.position;
         transform.position = target;
 
-        // Face direction of travel (looks more like flying than spinning)
-        Vector3 travelDir = (transform.position - prev);
+        Vector3 travelDir = transform.position - prev;
         travelDir.y = 0f;
 
         if (travelDir.sqrMagnitude > 0.00001f)
@@ -137,14 +151,42 @@ public class ButterflyHoverWander : MonoBehaviour
     {
         float rad = angleDeg * Mathf.Deg2Rad;
 
-        // Slightly wobble the radius to avoid perfect circles
-        float r = orbitRadius + Mathf.Sin(Time.time * 0.7f + rad) * 0.3f;
-
+        float r = orbitRadius + Mathf.Sin(Time.time * 0.7f + rad) * 0.02f;
         float bob = Mathf.Sin(Time.time * bobSpeed + rad) * bobAmount;
 
-        Vector3 circle = new Vector3(Mathf.Cos(rad) * r, 0f, Mathf.Sin(rad) * r);
+        Vector3 circle = new Vector3(
+            Mathf.Cos(rad) * r,
+            0f,
+            Mathf.Sin(rad) * r
+        );
 
-        return virtualCenter + circle + driftOffset + Vector3.up * (baseHeight + bob);
+        float flowerHeight = virtualCenter.y;
+        float finalHeight = flowerHeight + baseHeight + hoverHeightOffset + bob;
+
+        return new Vector3(
+            virtualCenter.x + circle.x + driftOffset.x,
+            finalHeight,
+            virtualCenter.z + circle.z + driftOffset.z
+        );
+    }
+
+    Vector3 ClampToTerritory(Vector3 p)
+    {
+        Vector3 local = p - homePosition;
+        local.x = Mathf.Clamp(local.x, -territoryHalfX, territoryHalfX);
+        local.z = Mathf.Clamp(local.z, -territoryHalfZ, territoryHalfZ);
+
+        return new Vector3(
+            homePosition.x + local.x,
+            p.y,
+            homePosition.z + local.z
+        );
+    }
+
+    Vector3 ClampToTerritoryWithHeight(Vector3 p)
+    {
+        Vector3 clamped = ClampToTerritory(p);
+        return new Vector3(clamped.x, p.y, clamped.z);
     }
 
     Transform PickNearbyFlower()
@@ -156,15 +198,18 @@ public class ButterflyHoverWander : MonoBehaviour
         for (int i = 0; i < hits.Length; i++)
         {
             Transform t = hits[i].transform;
-            if (!t.CompareTag(flowerTag)) continue;
+            if (!t.CompareTag(flowerTag))
+                continue;
 
-            // Prefer not-the-same, not-too-close, not-too-far
-            float d = Vector3.Distance(virtualCenter, t.position);
-            if (orbitCenter != null && t == orbitCenter) continue;
+            if (orbitCenter != null && t == orbitCenter)
+                continue;
+
+            Vector3 candidate = ClampToTerritory(t.position);
+            float d = Vector3.Distance(virtualCenter, candidate);
 
             float score =
-                -Mathf.Abs(d - switchSearchRadius * 0.6f)     // prefer mid-range
-                + Random.Range(-0.5f, 0.5f);                  // break ties
+                -Mathf.Abs(d - switchSearchRadius * 0.6f)
+                + Random.Range(-0.5f, 0.5f);
 
             if (score > bestScore)
             {
@@ -173,7 +218,6 @@ public class ButterflyHoverWander : MonoBehaviour
             }
         }
 
-        // If no nearby colliders found (no colliders on flowers), fallback to global search.
         if (best == null)
             best = FindNearestFlower(virtualCenter);
 
@@ -183,14 +227,17 @@ public class ButterflyHoverWander : MonoBehaviour
     Transform FindNearestFlower(Vector3 from)
     {
         GameObject[] flowers = GameObject.FindGameObjectsWithTag(flowerTag);
-        if (flowers == null || flowers.Length == 0) return null;
+        if (flowers == null || flowers.Length == 0)
+            return null;
 
         Transform best = null;
         float bestD = float.PositiveInfinity;
 
         for (int i = 0; i < flowers.Length; i++)
         {
-            float d = (flowers[i].transform.position - from).sqrMagnitude;
+            Vector3 flowerPos = ClampToTerritory(flowers[i].transform.position);
+            float d = (flowerPos - from).sqrMagnitude;
+
             if (d < bestD)
             {
                 bestD = d;
@@ -199,5 +246,28 @@ public class ButterflyHoverWander : MonoBehaviour
         }
 
         return best;
+    }
+
+    void OnValidate()
+    {
+        territoryHalfX = Mathf.Max(0.05f, territoryHalfX);
+        territoryHalfZ = Mathf.Max(0.05f, territoryHalfZ);
+
+        orbitRadius = Mathf.Max(0.01f, orbitRadius);
+        orbitSpeedDegPerSec = Mathf.Max(0f, orbitSpeedDegPerSec);
+
+        bobAmount = Mathf.Max(0f, bobAmount);
+        bobSpeed = Mathf.Max(0f, bobSpeed);
+
+        switchSearchRadius = Mathf.Max(0.05f, switchSearchRadius);
+
+        if (switchIntervalRange.x > switchIntervalRange.y)
+            switchIntervalRange = new Vector2(switchIntervalRange.y, switchIntervalRange.x);
+
+        switchChance = Mathf.Clamp01(switchChance);
+
+        travelSpeed = Mathf.Max(0.01f, travelSpeed);
+        driftAmount = Mathf.Max(0f, driftAmount);
+        turnSmoothing = Mathf.Max(0f, turnSmoothing);
     }
 }
