@@ -1,52 +1,61 @@
-#pragma kernel CalibrateSand
+﻿#pragma kernel CalibrateSand
 #pragma kernel TemporalSmooth
 
 StructuredBuffer<float3> RawPoints;
 RWStructuredBuffer<float3> CalibratedPoints;
 RWStructuredBuffer<float3> SmoothedPointsPrevious;
 
+// Variables from C#
 float _SmoothingFactor;
 float _MovementThreshold;
 float _HandHeightMin;
+float _HandLiftThreshold;
+float _HardCeilingY;
+float _OcclusionFreezeHeight;
+
 float4x4 _LocalToWorld;
 uint _VertexCount;
 float _MinX, _MaxX, _MinZ, _MaxZ, _MaxY;
-float _HandLiftThreshold;
 
-static const float INVALID_Y = -1000.0f;
+// Sentinel values
+static const float SOFT_INVALID_Y = -1000.0f;   // missing depth / shadow -> preserve previous terrain
+static const float HARD_INVALID_Y = -2000.0f;   // crop / force clear -> do NOT preserve previous
 static const float INVALID_CUTOFF = -500.0f;
+static const float HARD_INVALID_CUTOFF = -1500.0f;
 
-// === KERNEL 1: Transformation and Bounding Box ===
+// === KERNEL 1: Transform raw points into world space and tag invalid points ===
 [numthreads(64, 1, 1)]
 void CalibrateSand(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= _VertexCount) return;
 
     float3 rawPos = RawPoints[id.x];
-    rawPos.x = -rawPos.x; // Mirror flip for 1:1 alignment
 
-    // Missing depth / shadow / dead pixel
-    if (rawPos.z < 0.01)
+    // Mirror flip for 1:1 alignment
+    rawPos.x = -rawPos.x;
+
+    // Soft invalid: no depth / shadow / dead pixel
+    if (rawPos.z < 0.01f)
     {
-        CalibratedPoints[id.x] = float3(0.0, INVALID_Y, 0.0);
+        CalibratedPoints[id.x] = float3(0.0f, SOFT_INVALID_Y, 0.0f);
         return;
     }
 
-    float3 finalPos = mul(_LocalToWorld, float4(rawPos, 1.0)).xyz;
+    float3 finalPos = mul(_LocalToWorld, float4(rawPos, 1.0f)).xyz;
 
-    // Outside sandbox or above ceiling
+    // Hard invalid: outside crop box or above hard sandbox ceiling
     if (finalPos.x < _MinX || finalPos.x > _MaxX ||
         finalPos.z < _MinZ || finalPos.z > _MaxZ ||
         finalPos.y > _MaxY)
     {
-        CalibratedPoints[id.x] = float3(0.0, INVALID_Y, 0.0);
+        CalibratedPoints[id.x] = float3(0.0f, HARD_INVALID_Y, 0.0f);
         return;
     }
 
     CalibratedPoints[id.x] = finalPos;
 }
 
-// === KERNEL 2: Preserve terrain under occlusion, reject hand points ===
+// === KERNEL 2: Preserve old terrain under shadow, reject hand/body points ===
 [numthreads(64, 1, 1)]
 void TemporalSmooth(uint3 id : SV_DispatchThreadID)
 {
@@ -54,11 +63,12 @@ void TemporalSmooth(uint3 id : SV_DispatchThreadID)
 
     float3 currentPos = CalibratedPoints[id.x];
     float3 previousPos = SmoothedPointsPrevious[id.x];
-    bool currentInvalid = (currentPos.y < -500.0f);
-    bool previousInvalid = (previousPos.y < -500.0f) || 
-                       (previousPos.x == 0.0f && previousPos.y == 0.0f && previousPos.z == 0.0f);
 
-    // 1. If current sample is invalid (shadow / missing depth), keep old terrain
+    bool currentInvalid = (currentPos.y < -500.0f);
+    bool previousInvalid = (previousPos.y < -500.0f) ||
+                           (previousPos.x == 0.0f && previousPos.y == 0.0f && previousPos.z == 0.0f);
+
+    // 1. Missing depth / shadow → keep old terrain
     if (currentInvalid)
     {
         if (!previousInvalid)
@@ -73,7 +83,7 @@ void TemporalSmooth(uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // 2. If previous was invalid but current is valid, initialize
+    // 2. First valid frame seeds the history
     if (previousInvalid)
     {
         SmoothedPointsPrevious[id.x] = currentPos;
@@ -81,27 +91,25 @@ void TemporalSmooth(uint3 id : SV_DispatchThreadID)
         return;
     }
 
+    // 3. Anything above the occlusion height is treated as hand/body
+    if (currentPos.y > _OcclusionFreezeHeight)
+    {
+        CalibratedPoints[id.x] = previousPos;
+        return;
+    }
+
+    // 4. Normal smoothing only for real terrain
     float dist = distance(currentPos, previousPos);
-    float heightDelta = currentPos.y - previousPos.y;
 
-    // 3. Reject anything that rises too much above the old terrain
-    if (heightDelta > _HandLiftThreshold)
+    if (dist > _MovementThreshold)
     {
-        CalibratedPoints[id.x] = previousPos;
+        // large movement = snap to current terrain instead of ripple smoothing
+        SmoothedPointsPrevious[id.x] = currentPos;
+        CalibratedPoints[id.x] = currentPos;
         return;
     }
 
-    // 4. Reject fast movement in the hand zone
-    if (dist > _MovementThreshold && currentPos.y > _HandHeightMin)
-    {
-        CalibratedPoints[id.x] = previousPos;
-        return;
-    }
-
-    // 5. Normal smoothing
-    float dynamicSmoothing = _SmoothingFactor * (1.0 - saturate(dist / _MovementThreshold));
-    float3 smoothedPos = lerp(currentPos, previousPos, dynamicSmoothing);
-
+    float3 smoothedPos = lerp(currentPos, previousPos, _SmoothingFactor);
     SmoothedPointsPrevious[id.x] = smoothedPos;
     CalibratedPoints[id.x] = smoothedPos;
 }

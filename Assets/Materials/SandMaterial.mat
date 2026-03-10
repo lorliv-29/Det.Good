@@ -26,10 +26,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _LineThickness: 0.094
-    - _MaxHeight: 1.1
-    - _MinHeight: 1.27
+    - _MaxHeight: 1.16
+    - _MinHeight: 0.96
     - _PointSize: 0.003
-    - _Steps: 12
+    - _Steps: 10.54
     m_Colors:
     - _Color: {r: 0.9019608, g: 0.7863482, b: 0.6, a: 1}
     - _SandColor: {r: 0.44635153, g: 0.654088, b: 0.3558403, a: 1}

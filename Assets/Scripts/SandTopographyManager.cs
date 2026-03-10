@@ -24,16 +24,30 @@ public class SandTopographyManager : MonoBehaviour
     public float minZ = -0.5f;
     public float maxZ = 0.5f;
 
-    [Tooltip("The Ceiling. Anything higher than this is instantly deleted. Perfect for hiding arms!")]
+    [Tooltip("Anything higher than this is hard-cropped.")]
     public float maxY = 0.9f;
+
+    [Header("Occlusion Freeze")]
+    [Tooltip("Anything above this height is treated as hand/body occlusion and will not update the terrain.")]
+    public float occlusionFreezeHeight = 0.22f;
 
     [Header("Mesh Stability (Temporal Smoothing)")]
     [Range(0.8f, 0.99f)]
     public float smoothingFactor = 0.95f;
+
     [Range(0.005f, 0.1f)]
     public float movementThreshold = 0.02f;
-    [Tooltip("If an object is moving fast AND is higher than this Y value, the shader ignores it (filters hands).")]
+
+    [Tooltip("If a moving point is above this world-space height, treat it as likely hand/body.")]
     public float handHeightMin = 0.3f;
+
+    [Header("Occlusion / Hand Rejection")]
+    [Range(0.005f, 0.1f)]
+    public float handLiftThreshold = 0.03f;
+
+    [Tooltip("Anything above this world-space height is treated as arm/body and rejected.")]
+    [Range(0.05f, 2.0f)]
+    public float hardCeilingY = 0.35f;
 
     private ComputeBuffer rawBuffer;
     public ComputeBuffer calibratedBuffer { get; private set; }
@@ -87,8 +101,7 @@ public class SandTopographyManager : MonoBehaviour
 
     void LateUpdate()
     {
-        // Check for Keyboard space key as a fallback for the OVR Input
-        if ((UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame))
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
             ToggleMeshMode();
         }
@@ -117,7 +130,6 @@ public class SandTopographyManager : MonoBehaviour
                         }
 
                         points.CopyVertices(sandVertices);
-                      
                         rawBuffer.SetData(sandVertices);
                         RunComputeShaderSequentially();
                     }
@@ -135,7 +147,8 @@ public class SandTopographyManager : MonoBehaviour
 
     private void RunComputeShaderSequentially()
     {
-        if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null || smoothedPreviousBuffer == null) return;
+        if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null || smoothedPreviousBuffer == null)
+            return;
 
         sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
         sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
@@ -156,8 +169,10 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_SmoothingFactor", smoothingFactor);
         sandCalibrator.SetFloat("_MovementThreshold", movementThreshold);
         sandCalibrator.SetFloat("_HandHeightMin", handHeightMin);
+        sandCalibrator.SetFloat("_HandLiftThreshold", handLiftThreshold);
+        sandCalibrator.SetFloat("_HardCeilingY", hardCeilingY);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
-        sandCalibrator.SetFloat("_HandLiftThreshold", 0.03f);
+        sandCalibrator.SetFloat("_OcclusionFreezeHeight", occlusionFreezeHeight);
 
         sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
     }
