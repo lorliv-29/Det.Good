@@ -5,8 +5,8 @@ using System.Linq;
 
 public class SandTopographyManager : MonoBehaviour
 {
+    [Header("References")]
     public SandMeshBuilder meshBuilder;
-    public Transform sandboxParent;
 
     [Header("RealSense Integration")]
     public RsFrameProvider Source;
@@ -19,38 +19,41 @@ public class SandTopographyManager : MonoBehaviour
     public Material sandMaterial;
 
     [Header("Sandbox Cropping (World Space)")]
+    [Tooltip("Left edge of the sandbox in world space.")]
     public float minX = -0.5f;
+
+    [Tooltip("Right edge of the sandbox in world space.")]
     public float maxX = 0.5f;
-    public float minZ = -0.5f;
+
+    [Tooltip("Back edge of the sandbox in world space.")]
+    public float minZ = -0.15f;
+
+    [Tooltip("Front edge of the sandbox in world space.")]
     public float maxZ = 0.5f;
 
-    [Tooltip("Anything higher than this is hard-cropped.")]
-    public float maxY = 0.9f;
+    [Header("Perimeter Protection")]
+    [Tooltip("Inner border around the sandbox where points are frozen to prevent hand junk near the edges.")]
+    public float perimeterMargin = 0.08f;
 
-    [Header("Occlusion Freeze")]
-    [Tooltip("Anything above this height is treated as hand/body occlusion and will not update the terrain.")]
-    public float occlusionFreezeHeight = 0.22f;
+    [Header("Height Controls")]
+    [Tooltip("Above this world-space height, terrain stops updating and keeps the previous stable terrain.")]
+    public float occlusionFreezeY = 1.95f;
 
-    [Header("Mesh Stability (Temporal Smoothing)")]
-    [Range(0.8f, 0.99f)]
-    public float smoothingFactor = 0.95f;
+    [Tooltip("Above this world-space height, points are deleted completely.")]
+    public float hardDeleteY = 2.15f;
 
-    [Range(0.005f, 0.1f)]
-    public float movementThreshold = 0.02f;
+    [Header("Temporal Stability")]
+    [Range(0.0f, 0.99f)]
+    [Tooltip("How much previous terrain is blended into tiny jitter changes.")]
+    public float smoothingFactor = 0.9f;
 
-    [Tooltip("If a moving point is above this world-space height, treat it as likely hand/body.")]
-    public float handHeightMin = 0.3f;
-
-    [Header("Occlusion / Hand Rejection")]
-    [Range(0.005f, 0.1f)]
-    public float handLiftThreshold = 0.03f;
-
-    [Tooltip("Anything above this world-space height is treated as arm/body and rejected.")]
-    [Range(0.05f, 2.0f)]
-    public float hardCeilingY = 0.35f;
+    [Range(0.0f, 0.05f)]
+    [Tooltip("Only changes smaller than this are smoothed. Larger changes update directly to avoid ripple effects.")]
+    public float jitterThreshold = 0.01f;
 
     private ComputeBuffer rawBuffer;
-    public ComputeBuffer calibratedBuffer { get; private set; }
+    private ComputeBuffer _calibratedBuffer;
+    public ComputeBuffer calibratedBuffer => _calibratedBuffer;
     private ComputeBuffer smoothedPreviousBuffer;
 
     private Vector3[] sandVertices;
@@ -62,7 +65,7 @@ public class SandTopographyManager : MonoBehaviour
 
     public bool isEditMode = true;
 
-    void Start()
+    private void Start()
     {
         Source.OnStart += OnStartStreaming;
         Source.OnStop += Dispose;
@@ -90,7 +93,10 @@ public class SandTopographyManager : MonoBehaviour
             using (var fs = frame.As<FrameSet>())
             using (var points = fs.FirstOrDefault<Points>(Stream.Depth, Format.Xyz32f))
             {
-                if (points != null) frameQueue.Enqueue(points);
+                if (points != null)
+                {
+                    frameQueue.Enqueue(points);
+                }
             }
         }
         else if (frame.Is(Extension.Points))
@@ -99,7 +105,7 @@ public class SandTopographyManager : MonoBehaviour
         }
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
@@ -115,43 +121,68 @@ public class SandTopographyManager : MonoBehaviour
                 {
                     if (points.VertexData != System.IntPtr.Zero)
                     {
-                        if (points.Count != vertexCount || rawBuffer == null)
-                        {
-                            vertexCount = points.Count;
-                            sandVertices = new Vector3[vertexCount];
-
-                            if (rawBuffer != null) rawBuffer.Release();
-                            if (calibratedBuffer != null) calibratedBuffer.Release();
-                            if (smoothedPreviousBuffer != null) smoothedPreviousBuffer.Release();
-
-                            rawBuffer = new ComputeBuffer(vertexCount, 12);
-                            calibratedBuffer = new ComputeBuffer(vertexCount, 12);
-                            smoothedPreviousBuffer = new ComputeBuffer(vertexCount, 12);
-                        }
+                        EnsureBuffers(points.Count);
 
                         points.CopyVertices(sandVertices);
                         rawBuffer.SetData(sandVertices);
+
                         RunComputeShaderSequentially();
                     }
                 }
             }
         }
 
-        if (isEditMode && calibratedBuffer != null && sandGrainMesh != null && sandMaterial != null && vertexCount > 0)
+        if (isEditMode &&
+            _calibratedBuffer != null &&
+            sandGrainMesh != null &&
+            sandMaterial != null &&
+            vertexCount > 0)
         {
-            sandMaterial.SetBuffer("CalibratedPoints", calibratedBuffer);
+            sandMaterial.SetBuffer("CalibratedPoints", _calibratedBuffer);
+
             Bounds bounds = new Bounds(Vector3.zero, Vector3.one * 1000f);
-            Graphics.DrawMeshInstancedProcedural(sandGrainMesh, 0, sandMaterial, bounds, vertexCount);
+            Graphics.DrawMeshInstancedProcedural(
+                sandGrainMesh,
+                0,
+                sandMaterial,
+                bounds,
+                vertexCount
+            );
         }
+    }
+
+    private void EnsureBuffers(int newVertexCount)
+    {
+        if (newVertexCount == vertexCount && rawBuffer != null)
+            return;
+
+        vertexCount = newVertexCount;
+        sandVertices = new Vector3[vertexCount];
+
+        ReleaseBuffer(ref rawBuffer);
+        ReleaseBuffer(ref _calibratedBuffer);
+        ReleaseBuffer(ref smoothedPreviousBuffer);
+
+        rawBuffer = new ComputeBuffer(vertexCount, sizeof(float) * 3);
+        _calibratedBuffer = new ComputeBuffer(vertexCount, sizeof(float) * 3);
+        smoothedPreviousBuffer = new ComputeBuffer(vertexCount, sizeof(float) * 3);
     }
 
     private void RunComputeShaderSequentially()
     {
-        if (sandCalibrator == null || rawBuffer == null || calibratedBuffer == null || smoothedPreviousBuffer == null)
+        if (sandCalibrator == null ||
+            rawBuffer == null ||
+            _calibratedBuffer == null ||
+            smoothedPreviousBuffer == null)
+        {
             return;
+        }
 
+        int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
+
+        // Pass 1: calibration + crop classification
         sandCalibrator.SetBuffer(calibrateKernel, "RawPoints", rawBuffer);
-        sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", calibratedBuffer);
+        sandCalibrator.SetBuffer(calibrateKernel, "CalibratedPoints", _calibratedBuffer);
         sandCalibrator.SetMatrix("_LocalToWorld", transform.localToWorldMatrix);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
 
@@ -159,20 +190,20 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_MaxX", maxX);
         sandCalibrator.SetFloat("_MinZ", minZ);
         sandCalibrator.SetFloat("_MaxZ", maxZ);
-        sandCalibrator.SetFloat("_MaxY", maxY);
+        sandCalibrator.SetFloat("_PerimeterMargin", perimeterMargin);
+        sandCalibrator.SetFloat("_HardDeleteY", hardDeleteY);
 
-        int threadGroups = Mathf.CeilToInt(vertexCount / 64f);
         sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);
 
-        sandCalibrator.SetBuffer(smoothKernel, "CalibratedPoints", calibratedBuffer);
+        // Pass 2: temporal persistence + occlusion freeze + jitter smoothing
+        sandCalibrator.SetBuffer(smoothKernel, "CalibratedPoints", _calibratedBuffer);
         sandCalibrator.SetBuffer(smoothKernel, "SmoothedPointsPrevious", smoothedPreviousBuffer);
         sandCalibrator.SetFloat("_SmoothingFactor", smoothingFactor);
-        sandCalibrator.SetFloat("_MovementThreshold", movementThreshold);
-        sandCalibrator.SetFloat("_HandHeightMin", handHeightMin);
-        sandCalibrator.SetFloat("_HandLiftThreshold", handLiftThreshold);
-        sandCalibrator.SetFloat("_HardCeilingY", hardCeilingY);
+        sandCalibrator.SetFloat("_JitterThreshold", jitterThreshold);
+        sandCalibrator.SetFloat("_OcclusionFreezeY", occlusionFreezeY);
+        sandCalibrator.SetFloat("_HardDeleteY", hardDeleteY);
+        sandCalibrator.SetFloat("_PerimeterMargin", perimeterMargin);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
-        sandCalibrator.SetFloat("_OcclusionFreezeHeight", occlusionFreezeHeight);
 
         sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
     }
@@ -183,10 +214,10 @@ public class SandTopographyManager : MonoBehaviour
 
         if (!isEditMode)
         {
-            if (meshBuilder != null && calibratedBuffer != null)
+            if (meshBuilder != null && _calibratedBuffer != null)
             {
                 meshBuilder.gameObject.SetActive(true);
-                meshBuilder.GeneratePhysicalMesh(calibratedBuffer);
+                meshBuilder.GeneratePhysicalMesh(_calibratedBuffer);
             }
         }
         else
@@ -195,6 +226,15 @@ public class SandTopographyManager : MonoBehaviour
             {
                 meshBuilder.gameObject.SetActive(false);
             }
+        }
+    }
+
+    private void ReleaseBuffer(ref ComputeBuffer buffer)
+    {
+        if (buffer != null)
+        {
+            buffer.Release();
+            buffer = null;
         }
     }
 
@@ -208,12 +248,12 @@ public class SandTopographyManager : MonoBehaviour
             frameQueue = null;
         }
 
-        if (rawBuffer != null) { rawBuffer.Release(); rawBuffer = null; }
-        if (calibratedBuffer != null) { calibratedBuffer.Release(); calibratedBuffer = null; }
-        if (smoothedPreviousBuffer != null) { smoothedPreviousBuffer.Release(); smoothedPreviousBuffer = null; }
+        ReleaseBuffer(ref rawBuffer);
+        ReleaseBuffer(ref _calibratedBuffer);
+        ReleaseBuffer(ref smoothedPreviousBuffer);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         Dispose();
     }

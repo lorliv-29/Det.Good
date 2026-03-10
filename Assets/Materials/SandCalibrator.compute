@@ -5,25 +5,34 @@ StructuredBuffer<float3> RawPoints;
 RWStructuredBuffer<float3> CalibratedPoints;
 RWStructuredBuffer<float3> SmoothedPointsPrevious;
 
-// Variables from C#
-float _SmoothingFactor;
-float _MovementThreshold;
-float _HandHeightMin;
-float _HandLiftThreshold;
-float _HardCeilingY;
-float _OcclusionFreezeHeight;
-
+// Values from C#
 float4x4 _LocalToWorld;
 uint _VertexCount;
-float _MinX, _MaxX, _MinZ, _MaxZ, _MaxY;
+
+float _MinX;
+float _MaxX;
+float _MinZ;
+float _MaxZ;
+float _PerimeterMargin;
+
+float _SmoothingFactor;
+float _JitterThreshold;
+float _OcclusionFreezeY;
+float _HardDeleteY;
 
 // Sentinel values
-static const float SOFT_INVALID_Y = -1000.0f;   // missing depth / shadow -> preserve previous terrain
-static const float HARD_INVALID_Y = -2000.0f;   // crop / force clear -> do NOT preserve previous
-static const float INVALID_CUTOFF = -500.0f;
-static const float HARD_INVALID_CUTOFF = -1500.0f;
+static const float SOFT_INVALID_Y      = -1000.0f; // missing depth / shadow
+static const float HARD_INVALID_Y      = -2000.0f; // very high junk / forced delete
+static const float PERIMETER_INVALID_Y = -3000.0f; // edge band freeze
 
-// === KERNEL 1: Transform raw points into world space and tag invalid points ===
+static const float INVALID_CUTOFF      = -500.0f;
+static const float HARD_INVALID_CUTOFF = -1500.0f;
+static const float PERIMETER_CUTOFF    = -2500.0f;
+
+// ============================================
+// KERNEL 1: Calibrate raw points into world space
+// and classify them
+// ============================================
 [numthreads(64, 1, 1)]
 void CalibrateSand(uint3 id : SV_DispatchThreadID)
 {
@@ -31,31 +40,52 @@ void CalibrateSand(uint3 id : SV_DispatchThreadID)
 
     float3 rawPos = RawPoints[id.x];
 
-    // Mirror flip for 1:1 alignment
+    // Mirror X for 1:1 alignment
     rawPos.x = -rawPos.x;
 
-    // Soft invalid: no depth / shadow / dead pixel
+    // Missing depth / dead pixel / shadow
     if (rawPos.z < 0.01f)
     {
         CalibratedPoints[id.x] = float3(0.0f, SOFT_INVALID_Y, 0.0f);
         return;
     }
 
-    float3 finalPos = mul(_LocalToWorld, float4(rawPos, 1.0f)).xyz;
+    float3 worldPos = mul(_LocalToWorld, float4(rawPos, 1.0f)).xyz;
 
-    // Hard invalid: outside crop box or above hard sandbox ceiling
-    if (finalPos.x < _MinX || finalPos.x > _MaxX ||
-        finalPos.z < _MinZ || finalPos.z > _MaxZ ||
-        finalPos.y > _MaxY)
+    // Outside the sandbox footprint
+    if (worldPos.x < _MinX || worldPos.x > _MaxX ||
+        worldPos.z < _MinZ || worldPos.z > _MaxZ)
+    {
+        CalibratedPoints[id.x] = float3(0.0f, SOFT_INVALID_Y, 0.0f);
+        return;
+    }
+
+    // Perimeter band near the edges of the box
+    bool inPerimeterBand =
+        (worldPos.x < (_MinX + _PerimeterMargin) ||
+         worldPos.x > (_MaxX - _PerimeterMargin) ||
+         worldPos.z < (_MinZ + _PerimeterMargin) ||
+         worldPos.z > (_MaxZ - _PerimeterMargin));
+
+    if (inPerimeterBand)
+    {
+        CalibratedPoints[id.x] = float3(0.0f, PERIMETER_INVALID_Y, 0.0f);
+        return;
+    }
+
+    // Hard-delete obvious floating junk high in the air
+    if (worldPos.y > _HardDeleteY)
     {
         CalibratedPoints[id.x] = float3(0.0f, HARD_INVALID_Y, 0.0f);
         return;
     }
 
-    CalibratedPoints[id.x] = finalPos;
+    CalibratedPoints[id.x] = worldPos;
 }
 
-// === KERNEL 2: Preserve old terrain under shadow, reject hand/body points ===
+// ============================================
+// KERNEL 2: Preserve old terrain under occlusion
+// ============================================
 [numthreads(64, 1, 1)]
 void TemporalSmooth(uint3 id : SV_DispatchThreadID)
 {
@@ -64,11 +94,45 @@ void TemporalSmooth(uint3 id : SV_DispatchThreadID)
     float3 currentPos = CalibratedPoints[id.x];
     float3 previousPos = SmoothedPointsPrevious[id.x];
 
-    bool currentInvalid = (currentPos.y < -500.0f);
-    bool previousInvalid = (previousPos.y < -500.0f) ||
+    bool currentPerimeterInvalid = (currentPos.y < PERIMETER_CUTOFF);
+    bool currentHardInvalid      = (currentPos.y < HARD_INVALID_CUTOFF) && !currentPerimeterInvalid;
+    bool currentInvalid          = (currentPos.y < INVALID_CUTOFF) && !currentHardInvalid && !currentPerimeterInvalid;
+
+    bool previousInvalid = (previousPos.y < INVALID_CUTOFF) ||
                            (previousPos.x == 0.0f && previousPos.y == 0.0f && previousPos.z == 0.0f);
 
-    // 1. Missing depth / shadow → keep old terrain
+    // 1. Perimeter band: keep old terrain if available
+    if (currentPerimeterInvalid)
+    {
+        if (!previousInvalid)
+        {
+            CalibratedPoints[id.x] = previousPos;
+        }
+        else
+        {
+            CalibratedPoints[id.x] = currentPos;
+            SmoothedPointsPrevious[id.x] = currentPos;
+        }
+        return;
+    }
+
+    // 2. Hard delete zone: also preserve old terrain if available
+    // This removes floating hand/body junk without punching holes
+    if (currentHardInvalid)
+    {
+        if (!previousInvalid)
+        {
+            CalibratedPoints[id.x] = previousPos;
+        }
+        else
+        {
+            CalibratedPoints[id.x] = currentPos;
+            SmoothedPointsPrevious[id.x] = currentPos;
+        }
+        return;
+    }
+
+    // 3. Missing depth / shadow: preserve old terrain if available
     if (currentInvalid)
     {
         if (!previousInvalid)
@@ -83,7 +147,7 @@ void TemporalSmooth(uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // 2. First valid frame seeds the history
+    // 4. First valid frame seeds history
     if (previousInvalid)
     {
         SmoothedPointsPrevious[id.x] = currentPos;
@@ -91,25 +155,27 @@ void TemporalSmooth(uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    // 3. Anything above the occlusion height is treated as hand/body
-    if (currentPos.y > _OcclusionFreezeHeight)
+    // 5. Height-based occlusion freeze
+    // If something is above this height, do not update terrain there.
+    if (currentPos.y > _OcclusionFreezeY)
     {
         CalibratedPoints[id.x] = previousPos;
         return;
     }
 
-    // 4. Normal smoothing only for real terrain
+    // 6. Smooth only tiny jitter to avoid ripple effects
     float dist = distance(currentPos, previousPos);
 
-    if (dist > _MovementThreshold)
+    if (dist < _JitterThreshold)
     {
-        // large movement = snap to current terrain instead of ripple smoothing
+        float3 smoothedPos = lerp(currentPos, previousPos, _SmoothingFactor);
+        SmoothedPointsPrevious[id.x] = smoothedPos;
+        CalibratedPoints[id.x] = smoothedPos;
+    }
+    else
+    {
+        // Real terrain changes update directly
         SmoothedPointsPrevious[id.x] = currentPos;
         CalibratedPoints[id.x] = currentPos;
-        return;
     }
-
-    float3 smoothedPos = lerp(currentPos, previousPos, _SmoothingFactor);
-    SmoothedPointsPrevious[id.x] = smoothedPos;
-    CalibratedPoints[id.x] = smoothedPos;
 }
