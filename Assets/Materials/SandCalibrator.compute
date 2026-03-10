@@ -1,83 +1,104 @@
 #pragma kernel CalibrateSand
-#pragma kernel TemporalSmooth 
+#pragma kernel TemporalSmooth
 
 StructuredBuffer<float3> RawPoints;
 RWStructuredBuffer<float3> CalibratedPoints;
 RWStructuredBuffer<float3> SmoothedPointsPrevious;
 
-// Variables from C#
-float _SmoothingFactor; 
-float _MovementThreshold; 
+float _SmoothingFactor;
+float _MovementThreshold;
 float _HandHeightMin;
 float4x4 _LocalToWorld;
 uint _VertexCount;
-float _MinX, _MaxX, _MinZ, _MaxZ, _MaxY; 
+float _MinX, _MaxX, _MinZ, _MaxZ, _MaxY;
+float _HandLiftThreshold;
+
+static const float INVALID_Y = -1000.0f;
+static const float INVALID_CUTOFF = -500.0f;
 
 // === KERNEL 1: Transformation and Bounding Box ===
 [numthreads(64, 1, 1)]
-void CalibrateSand (uint3 id : SV_DispatchThreadID)
+void CalibrateSand(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= _VertexCount) return;
 
     float3 rawPos = RawPoints[id.x];
+    rawPos.x = -rawPos.x; // Mirror flip for 1:1 alignment
 
-    // Flip X to match physical left/right with Unity world
-    rawPos.x = -rawPos.x;
-
-    // 1. Filter dead camera pixels (Hardware noise)
-    if (rawPos.z < 0.01) 
+    // Missing depth / shadow / dead pixel
+    if (rawPos.z < 0.01)
     {
-        CalibratedPoints[id.x] = float3(0.0, -1000.0, 0.0);
+        CalibratedPoints[id.x] = float3(0.0, INVALID_Y, 0.0);
         return;
     }
 
-    // 2. Align to the Unity World
     float3 finalPos = mul(_LocalToWorld, float4(rawPos, 1.0)).xyz;
 
-    // 3. The Digital Cookie Cutter + Ceiling
-    if (finalPos.x < _MinX || finalPos.x > _MaxX || finalPos.z < _MinZ || finalPos.z > _MaxZ || finalPos.y > _MaxY)
+    // Outside sandbox or above ceiling
+    if (finalPos.x < _MinX || finalPos.x > _MaxX ||
+        finalPos.z < _MinZ || finalPos.z > _MaxZ ||
+        finalPos.y > _MaxY)
     {
-        finalPos = float3(0.0, -1000.0, 0.0);
+        CalibratedPoints[id.x] = float3(0.0, INVALID_Y, 0.0);
+        return;
     }
 
     CalibratedPoints[id.x] = finalPos;
 }
 
-// === KERNEL 2: THE STABILIZER ===
+// === KERNEL 2: Preserve terrain under occlusion, reject hand points ===
 [numthreads(64, 1, 1)]
-void TemporalSmooth (uint3 id : SV_DispatchThreadID)
+void TemporalSmooth(uint3 id : SV_DispatchThreadID)
 {
     if (id.x >= _VertexCount) return;
 
     float3 currentPos = CalibratedPoints[id.x];
+    float3 previousPos = SmoothedPointsPrevious[id.x];
+    bool currentInvalid = (currentPos.y < -500.0f);
+    bool previousInvalid = (previousPos.y < -500.0f) || 
+                       (previousPos.x == 0.0f && previousPos.y == 0.0f && previousPos.z == 0.0f);
 
-    // If the point is underground THIS frame, DO NOT SMOOTH IT!
-    if (currentPos.y < -500.0f)
+    // 1. If current sample is invalid (shadow / missing depth), keep old terrain
+    if (currentInvalid)
     {
-        SmoothedPointsPrevious[id.x] = currentPos;
+        if (!previousInvalid)
+        {
+            CalibratedPoints[id.x] = previousPos;
+        }
+        else
+        {
+            CalibratedPoints[id.x] = currentPos;
+            SmoothedPointsPrevious[id.x] = currentPos;
+        }
         return;
     }
 
-    float3 previousPos = SmoothedPointsPrevious[id.x];
-
-    // The Wake-Up Snap (Fixes dead pixels instantly)
-    if (previousPos.y < -500.0f || (previousPos.x == 0 && previousPos.y == 0 && previousPos.z == 0))
+    // 2. If previous was invalid but current is valid, initialize
+    if (previousInvalid)
     {
         SmoothedPointsPrevious[id.x] = currentPos;
-        return; 
+        CalibratedPoints[id.x] = currentPos;
+        return;
     }
 
     float dist = distance(currentPos, previousPos);
+    float heightDelta = currentPos.y - previousPos.y;
 
-    // 4. The Hybrid Hand Filter
-    // If it moves too fast AND is above our safe sand height limit, ignore it!
-    if (dist > _MovementThreshold && currentPos.y > _HandHeightMin)
+    // 3. Reject anything that rises too much above the old terrain
+    if (heightDelta > _HandLiftThreshold)
     {
-        CalibratedPoints[id.x] = previousPos; // Output the old sand position
-        return; 
+        CalibratedPoints[id.x] = previousPos;
+        return;
     }
 
-    // 5. Dynamic Velocity Blending (Normal Sand Smoothing)
+    // 4. Reject fast movement in the hand zone
+    if (dist > _MovementThreshold && currentPos.y > _HandHeightMin)
+    {
+        CalibratedPoints[id.x] = previousPos;
+        return;
+    }
+
+    // 5. Normal smoothing
     float dynamicSmoothing = _SmoothingFactor * (1.0 - saturate(dist / _MovementThreshold));
     float3 smoothedPos = lerp(currentPos, previousPos, dynamicSmoothing);
 

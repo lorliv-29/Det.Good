@@ -27,7 +27,7 @@ Material:
     m_Floats:
     - _LineThickness: 0.094
     - _MaxHeight: 1.1
-    - _MinHeight: 0.94
+    - _MinHeight: 1.27
     - _PointSize: 0.003
     - _Steps: 12
     m_Colors:

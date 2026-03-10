@@ -157,6 +157,7 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_MovementThreshold", movementThreshold);
         sandCalibrator.SetFloat("_HandHeightMin", handHeightMin);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
+        sandCalibrator.SetFloat("_HandLiftThreshold", 0.03f);
 
         sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
     }
