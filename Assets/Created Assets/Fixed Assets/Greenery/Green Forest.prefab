@@ -126,7 +126,7 @@ GameObject:
   - component: {fileID: 8349917577976019121}
   m_Layer: 0
   m_Name: Green Forest
-  m_TagString: Untagged
+  m_TagString: Forest
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

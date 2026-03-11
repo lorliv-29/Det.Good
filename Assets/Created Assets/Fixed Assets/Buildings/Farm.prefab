@@ -514,7 +514,7 @@ GameObject:
   - component: {fileID: 1471948256886091940}
   m_Layer: 0
   m_Name: Farm
-  m_TagString: Untagged
+  m_TagString: Farm
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

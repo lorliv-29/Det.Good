@@ -397,7 +397,7 @@ GameObject:
   - component: {fileID: 8923158652866156421}
   m_Layer: 0
   m_Name: Orange Forest
-  m_TagString: Untagged
+  m_TagString: Forest
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
