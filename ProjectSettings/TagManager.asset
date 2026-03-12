@@ -28,6 +28,11 @@ TagManager:
   - Farm
   - People
   - Ground
+  - Animal
+  - Wildlife
+  - Insect
+  - Forest
+  - Flowers
   layers:
   - Default
   - TransparentFX
@@ -35,8 +40,8 @@ TagManager:
   - Ground
   - Water
   - UI
-  - 
-  - 
+  - Projection
+  - Ignore NavMesh
   - 
   - 
   - 

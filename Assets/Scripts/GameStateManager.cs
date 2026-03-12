@@ -9,7 +9,8 @@ public class GameStateManager : MonoBehaviour
 
     [Header("Dependencies")]
     public SandTopographyManager topographyManager;
-    public GameObject PhysicalSandMeshObject;
+    public GameObject physicalSandMeshObject;
+    public NavMeshSurface navMeshSurface;   // <-- assign the one on NavMesh Proxy
     public GameObject EcosystemManager;
 
     void Update()
@@ -26,17 +27,24 @@ public class GameStateManager : MonoBehaviour
 
     private void ActivateEcosystem()
     {
-        // 1. Bake the NavMesh on the frozen mesh
-        if (PhysicalSandMeshObject != null)
-        {
-            var navSurface = PhysicalSandMeshObject.GetComponent<NavMeshSurface>();
-            if (navSurface != null) navSurface.BuildNavMesh();
-        }
-
-        // 2. Snap any existing buildings
+        // 1. Snap buildings first so they affect the bake
         SnapBuildingsToSand();
 
-        // 3. Wake up the Spawners
+        // 2. Bake the NavMesh on the proxy surface
+        if (navMeshSurface != null)
+        {
+            Debug.Log("T pressed -> baking NavMesh on: " + navMeshSurface.gameObject.name);
+            navMeshSurface.BuildNavMesh();
+            var triangulation = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            Debug.Log("NavMesh triangulation vertices: " + triangulation.vertices.Length);
+            Debug.Log("NavMesh triangulation triangles: " + (triangulation.indices.Length / 3));
+        }
+        else
+        {
+            Debug.LogWarning("NavMeshSurface reference is missing on GameStateManager.");
+        }
+
+        // 3. Wake up the spawners
         if (EcosystemManager != null)
         {
             MonoBehaviour[] allSpawners = EcosystemManager.GetComponents<MonoBehaviour>();
