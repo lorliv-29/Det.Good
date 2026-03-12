@@ -107,19 +107,19 @@ NavMeshAgent:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5832102151915319507}
-  m_Enabled: 1
+  m_Enabled: 0
   m_AgentTypeID: -1372625422
-  m_Radius: 0.05
-  m_Speed: 0.5
-  m_Acceleration: 3
+  m_Radius: 0.04
+  m_Speed: 0.05
+  m_Acceleration: 2
   avoidancePriority: 50
   m_AngularSpeed: 120
   m_StoppingDistance: 0.1
   m_AutoTraverseOffMeshLink: 0
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 0.2
-  m_BaseOffset: 0
+  m_Height: 0.12
+  m_BaseOffset: 0.01
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 1
 --- !u!114 &-3447240220026030868
@@ -134,20 +134,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6435db4d9eaff8f40aca62ba40b3375e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Wanderer
-  territoryHalfX: 1.5
-  territoryHalfZ: 1
-  minWait: 0.5
-  maxWait: 2
-  waypointTolerance: 0.7
-  sampleRadius: 2
-  stepDistance: 3
-  turnJitterDegrees: 35
-  bigTurnChance: 0.12
-  bigTurnRange: {x: 80, y: 160}
-  homePull: 0.35
-  agentSpeed: 0.6
-  agentAcceleration: 2
-  agentAngularSpeed: 180
+  territoryHalfX: 0.05
+  territoryHalfZ: 0.05
+  minWait: 1
+  maxWait: 2.5
+  waypointTolerance: 0.03
+  sampleRadius: 0.05
+  stepDistance: 0.05
+  turnJitterDegrees: 15
+  bigTurnChance: 0.08
+  bigTurnRange: {x: 7, y: 305}
+  homePull: 0.55
+  agentSpeed: 0.05
+  agentAcceleration: 1.2
+  agentAngularSpeed: 140
 --- !u!114 &7973218148170257903
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -198,18 +198,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e957f3f8b7098814198a64ffc92a83b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PersonInteraction
-  detectHalfWidthX: 1.5
-  detectHalfDepthZ: 1
-  detectHalfHeightY: 1
+  detectHalfWidthX: 0.1
+  detectHalfDepthZ: 0.1
+  detectHalfHeightY: 0.08
   peopleTag: People
-  checkInterval: 0.4
-  interactionChance: 0.1
-  interactionDuration: 4
+  checkInterval: 0.5
+  interactionChance: 0.08
+  interactionDuration: 2.5
   cooldownDuration: 3
   loveChance: 0.5
   fightEffectPrefab: {fileID: 1736727820739034701, guid: fa43324e365910943a39aefff6062b3f, type: 3}
   loveEffectPrefab: {fileID: 6988425782177480848, guid: 3c298446b30273a47b4699dede6cc362, type: 3}
-  effectHeightOffset: 0.2
+  effectHeightOffset: 0.05
   renderersToHide: []
 --- !u!95 &-4406065410712918497
 Animator:
