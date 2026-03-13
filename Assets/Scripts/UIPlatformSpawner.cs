@@ -4,8 +4,9 @@ public class UIPlatformSpawner : MonoBehaviour
 {
     [Header("Placement Settings")]
     public Transform previewPlatform;
+
+    [Header("Spawn Scale")]
     public float spawnScale = 0.15f;
-    public float exitDistance = 0.1f;
 
     private GameObject currentPreview;
     private GameObject lastSelectedPrefab;
@@ -16,41 +17,30 @@ public class UIPlatformSpawner : MonoBehaviour
         RefreshPlatform();
     }
 
-    void Update()
+    private void RefreshPlatform()
     {
-        if (lastSelectedPrefab != null && currentPreview == null)
+        if (currentPreview != null)
         {
-            RefreshPlatform();
+            Destroy(currentPreview);
         }
 
-        if (currentPreview != null && previewPlatform != null)
+        if (lastSelectedPrefab != null && previewPlatform != null)
         {
-            if (Vector3.Distance(currentPreview.transform.position, previewPlatform.position) > exitDistance)
-            {
-               
-                currentPreview.transform.SetParent(null);
+            currentPreview = Instantiate(lastSelectedPrefab, previewPlatform.position, previewPlatform.rotation);
 
-                currentPreview = null;
+            currentPreview.transform.localScale = Vector3.one * spawnScale;
 
-                Debug.Log("Object removed from platform. Spawning replacement...");
-            }
+            Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
+            if (rb != null) rb.isKinematic = true;
         }
     }
 
-    public void RefreshPlatform()
+    private void OnTriggerExit(Collider other)
     {
-        if (previewPlatform == null || lastSelectedPrefab == null) return;
-
-        if (currentPreview != null) Destroy(currentPreview);
-
-        currentPreview = Instantiate(lastSelectedPrefab, previewPlatform.position, previewPlatform.rotation);
-
-        currentPreview.transform.SetParent(previewPlatform);
-        currentPreview.transform.localScale = Vector3.one * spawnScale;
-
-        Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
-        if (rb != null) rb.isKinematic = true;
-
-        Debug.Log("New Preview Spawned: " + currentPreview.name);
+        if (currentPreview != null && other.gameObject == currentPreview)
+        {
+            currentPreview = null;
+            Invoke("RefreshPlatform", 0.1f);
+        }
     }
 }
