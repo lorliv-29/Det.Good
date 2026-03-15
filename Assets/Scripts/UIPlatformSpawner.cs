@@ -2,25 +2,23 @@ using UnityEngine;
 
 public class UIPlatformSpawner : MonoBehaviour
 {
-    [Header("Placement Settings")]
-    public Transform previewPlatform;
-
-    [Header("Spawn Scale")]
-    public float spawnScale = 0.15f;
-
-    [Header("Abyss Cleanup")]
-    public float destroyBelowY = -50f;
+    [Header("Spawn Settings")]
+    public Transform spawnPoint;
+    public float spawnScale = 1f;
 
     private GameObject currentPreview;
-    private GameObject lastSelectedPrefab;
+    private GameObject currentPrefab;
+
+    private bool previewWasInsideTrigger = false;
+    private bool isRespawning = false;
 
     public void SpawnFromCategory(GameObject prefab)
     {
-        lastSelectedPrefab = prefab;
+        currentPrefab = prefab;
         ReplacePreview();
     }
 
-    public void ReplacePreview()
+    void ReplacePreview()
     {
         if (currentPreview != null)
         {
@@ -28,46 +26,73 @@ public class UIPlatformSpawner : MonoBehaviour
             currentPreview = null;
         }
 
+        previewWasInsideTrigger = false;
+        isRespawning = false;
+
         SpawnPreview();
     }
 
-    public void SpawnPreview()
+    void SpawnPreview()
     {
-        if (lastSelectedPrefab == null || previewPlatform == null || currentPreview != null)
+        if (currentPrefab == null || spawnPoint == null || currentPreview != null)
             return;
 
-        currentPreview = Instantiate(lastSelectedPrefab, previewPlatform.position, previewPlatform.rotation);
-
+        currentPreview = Instantiate(currentPrefab, spawnPoint.position, spawnPoint.rotation);
         currentPreview.transform.localScale = Vector3.one * spawnScale;
 
         Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
         if (rb != null)
             rb.isKinematic = true;
 
-        PreviewItem previewItem = currentPreview.GetComponent<PreviewItem>();
-        if (previewItem == null)
-            previewItem = currentPreview.AddComponent<PreviewItem>();
-
-        previewItem.Initialize(this, destroyBelowY);
+        // Give physics one frame to settle before we allow respawn logic
+        StartCoroutine(EnablePreviewCheckNextFrame());
     }
 
-    public void NotifyPreviewGrabbed(GameObject grabbedObject)
+    System.Collections.IEnumerator EnablePreviewCheckNextFrame()
     {
-        if (grabbedObject != currentPreview)
-            return;
-
-        Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
-        if (rb != null)
-            rb.isKinematic = false;
-
-        currentPreview = null;
-
-        SpawnPreview();
+        yield return null;
+        isRespawning = false;
     }
 
-    public void NotifyPreviewDestroyed(GameObject destroyedObject)
+    private void OnTriggerEnter(Collider other)
     {
-        if (destroyedObject == currentPreview)
+        if (currentPreview == null) return;
+
+        GameObject root = GetRootObject(other);
+
+        if (root == currentPreview)
+        {
+            previewWasInsideTrigger = true;
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (currentPreview == null) return;
+        if (isRespawning) return;
+
+        GameObject root = GetRootObject(other);
+
+        if (root == currentPreview && previewWasInsideTrigger)
+        {
+            isRespawning = true;
+            previewWasInsideTrigger = false;
+
+            // The old object stays in the world
+            Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
+            if (rb != null)
+                rb.isKinematic = false;
+
             currentPreview = null;
+            SpawnPreview();
+        }
+    }
+
+    GameObject GetRootObject(Collider col)
+    {
+        if (col.attachedRigidbody != null)
+            return col.attachedRigidbody.gameObject;
+
+        return col.transform.root.gameObject;
     }
 }
