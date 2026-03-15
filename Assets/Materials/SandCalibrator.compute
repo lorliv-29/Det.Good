@@ -19,6 +19,7 @@ float _SmoothingFactor;
 float _JitterThreshold;
 float _OcclusionFreezeY;
 float _HardDeleteY;
+float _BottomClipY;
 
 // Sentinel values
 static const float SOFT_INVALID_Y      = -1000.0f; // missing depth / shadow
@@ -51,6 +52,13 @@ void CalibrateSand(uint3 id : SV_DispatchThreadID)
     }
 
     float3 worldPos = mul(_LocalToWorld, float4(rawPos, 1.0f)).xyz;
+
+    // Anything below the sandbox volume is deleted
+if (worldPos.y < _BottomClipY)
+{
+    CalibratedPoints[id.x] = float3(0.0f, HARD_INVALID_Y, 0.0f);
+    return;
+}
 
     // Outside the sandbox footprint
     if (worldPos.x < _MinX || worldPos.x > _MaxX ||

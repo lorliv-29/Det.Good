@@ -31,6 +31,9 @@ public class SandTopographyManager : MonoBehaviour
     [Tooltip("Front edge of the sandbox in world space.")]
     public float maxZ = 0.5f;
 
+    [Header("Vertical Crop (World Space)")]
+    public float bottomClipY = 0.0f;
+
     [Header("Perimeter Protection")]
     [Tooltip("Inner border around the sandbox where points are frozen to prevent hand junk near the edges.")]
     public float perimeterMargin = 0.08f;
@@ -192,6 +195,7 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_MaxZ", maxZ);
         sandCalibrator.SetFloat("_PerimeterMargin", perimeterMargin);
         sandCalibrator.SetFloat("_HardDeleteY", hardDeleteY);
+        sandCalibrator.SetFloat("_BottomClipY", bottomClipY);
 
         sandCalibrator.Dispatch(calibrateKernel, threadGroups, 1, 1);
 
