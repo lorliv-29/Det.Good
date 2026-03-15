@@ -399,7 +399,8 @@ GameObject:
   - component: {fileID: 5334658714260661117}
   - component: {fileID: 343352576447021479}
   - component: {fileID: 5415485900430675829}
-  m_Layer: 0
+  - component: {fileID: -774825670942146703}
+  m_Layer: 9
   m_Name: House 1
   m_TagString: House
   m_Icon: {fileID: 0}
@@ -472,6 +473,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &-774825670942146703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8869340426975762563}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1001 &88463268944485251
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -399,7 +399,8 @@ GameObject:
   - component: {fileID: 256252325574086558}
   - component: {fileID: 3019430858993029784}
   - component: {fileID: 523854830965222039}
-  m_Layer: 0
+  - component: {fileID: -6484108352596000446}
+  m_Layer: 9
   m_Name: Round Fountain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -472,6 +473,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.6102442, y: 0.15238914, z: 0.6174891}
   m_Center: {x: 0.0007245783, y: 0.07751687, z: -0.013040286}
+--- !u!114 &-6484108352596000446
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5518596944285032702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1001 &814399818578580517
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -282,7 +282,8 @@ GameObject:
   - component: {fileID: 3257003741539107984}
   - component: {fileID: 6170649518990508346}
   - component: {fileID: 5457118653434700782}
-  m_Layer: 0
+  - component: {fileID: -46141493765636771}
+  m_Layer: 9
   m_Name: Tent
   m_TagString: House
   m_Icon: {fileID: 0}
@@ -355,6 +356,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.52084637, y: 0.35110086, z: 0.41556153}
   m_Center: {x: -0.0053716637, y: 0.16974524, z: -0.030081645}
+--- !u!114 &-46141493765636771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2548632427091309582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &2873679923854503595
 GameObject:
   m_ObjectHideFlags: 0

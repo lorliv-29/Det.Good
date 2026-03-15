@@ -282,7 +282,8 @@ GameObject:
   - component: {fileID: 863295394789186213}
   - component: {fileID: 5959323393519529132}
   - component: {fileID: 8833714630462567005}
-  m_Layer: 0
+  - component: {fileID: -294863978407135126}
+  m_Layer: 9
   m_Name: Planted Flowers
   m_TagString: Flowers
   m_Icon: {fileID: 0}
@@ -355,6 +356,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.5529501, y: 0.34791592, z: 1.3238393}
   m_Center: {x: 0.16852844, y: 0.13878824, z: -0.014319494}
+--- !u!114 &-294863978407135126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 813947038381452411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &7797918592333404349
 GameObject:
   m_ObjectHideFlags: 0

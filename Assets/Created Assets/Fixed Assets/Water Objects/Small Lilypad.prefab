@@ -128,7 +128,8 @@ GameObject:
   - component: {fileID: 6083353094814865498}
   - component: {fileID: 2817627917784222264}
   - component: {fileID: 8072888651449449343}
-  m_Layer: 0
+  - component: {fileID: -7763150912743726529}
+  m_Layer: 9
   m_Name: Small Lilypad
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -201,6 +202,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.19700867, y: 0.072921, z: 0.24354184}
   m_Center: {x: 0.00059655553, y: 0.028039223, z: 0.0023863215}
+--- !u!114 &-7763150912743726529
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3617994737544659485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &4484975431961906886
 GameObject:
   m_ObjectHideFlags: 0

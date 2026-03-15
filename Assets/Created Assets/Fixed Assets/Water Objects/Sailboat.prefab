@@ -395,7 +395,8 @@ GameObject:
   - component: {fileID: 866945447304708583}
   - component: {fileID: 215756013777151912}
   - component: {fileID: 6699672561891450315}
-  m_Layer: 0
+  - component: {fileID: 8470659648980135489}
+  m_Layer: 9
   m_Name: Sailboat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -469,6 +470,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.19585295, y: 0.5066132, z: 0.39320913}
   m_Center: {x: 0.0029457454, y: 0.2466938, z: 0.010309052}
+--- !u!114 &8470659648980135489
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7407795280680686442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &8967084863051219891
 GameObject:
   m_ObjectHideFlags: 0

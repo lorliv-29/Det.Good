@@ -395,7 +395,8 @@ GameObject:
   - component: {fileID: 778009775526300434}
   - component: {fileID: 2247261322068135835}
   - component: {fileID: 5529448799311483760}
-  m_Layer: 0
+  - component: {fileID: -2418719079407813157}
+  m_Layer: 9
   m_Name: Well
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -469,6 +470,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &-2418719079407813157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7387070166891156067}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &8405103548950207487
 GameObject:
   m_ObjectHideFlags: 0
@@ -742,6 +758,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 778009775526300434}
     m_Modifications:
+    - target: {fileID: -6050053932952370018, guid: 3498fa76a7d19444c942ce313e3af0cf, type: 3}
+      propertyPath: sandLayer.m_Bits
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2114177247850998344, guid: 3498fa76a7d19444c942ce313e3af0cf, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -793,6 +813,10 @@ PrefabInstance:
     - target: {fileID: 2141015779863278510, guid: 3498fa76a7d19444c942ce313e3af0cf, type: 3}
       propertyPath: m_Name
       value: Well
+      objectReference: {fileID: 0}
+    - target: {fileID: 2141015779863278510, guid: 3498fa76a7d19444c942ce313e3af0cf, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2141015779863278510, guid: 3498fa76a7d19444c942ce313e3af0cf, type: 3}
       propertyPath: m_IsActive

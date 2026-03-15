@@ -399,7 +399,8 @@ GameObject:
   - component: {fileID: 477112750843002026}
   - component: {fileID: 1513720004386583085}
   - component: {fileID: 822123812955278716}
-  m_Layer: 0
+  - component: {fileID: 7026353254305577437}
+  m_Layer: 9
   m_Name: Evergreen Forest
   m_TagString: Forest
   m_Icon: {fileID: 0}
@@ -473,6 +474,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.7570685, y: 0.7755207, z: 1.4533603}
   m_Center: {x: -0.0132050365, y: 0.38953757, z: 0.02861023}
+--- !u!114 &7026353254305577437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7661348517211332617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &8115879524814116360
 GameObject:
   m_ObjectHideFlags: 0

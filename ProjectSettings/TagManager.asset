@@ -33,6 +33,7 @@ TagManager:
   - Insect
   - Forest
   - Flowers
+  - SamplesInfoPanel
   layers:
   - Default
   - TransparentFX
@@ -42,8 +43,8 @@ TagManager:
   - UI
   - Projection
   - Ignore NavMesh
-  - 
-  - 
+  - SandCollider
+  - Assets
   - 
   - 
   - 

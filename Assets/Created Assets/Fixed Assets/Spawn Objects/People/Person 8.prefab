@@ -84,9 +84,6 @@ PrefabInstance:
       addedObject: {fileID: -3447240220026030868}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7973218148170257903}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
-      insertIndex: -1
       addedObject: {fileID: -3340432759794236503}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
       insertIndex: -1
@@ -107,7 +104,7 @@ NavMeshAgent:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5832102151915319507}
-  m_Enabled: 0
+  m_Enabled: 1
   m_AgentTypeID: -1372625422
   m_Radius: 0.04
   m_Speed: 0.05
@@ -148,21 +145,6 @@ MonoBehaviour:
   agentSpeed: 0.05
   agentAcceleration: 1.2
   agentAngularSpeed: 140
---- !u!114 &7973218148170257903
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5832102151915319507}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
-  sandLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!136 &-3340432759794236503
 CapsuleCollider:
   m_ObjectHideFlags: 0

@@ -11,7 +11,8 @@ GameObject:
   - component: {fileID: 6427171121545296432}
   - component: {fileID: 6371470047297479198}
   - component: {fileID: 628284354737471395}
-  m_Layer: 0
+  - component: {fileID: 8910876681540902177}
+  m_Layer: 9
   m_Name: Bonfire
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -85,6 +86,21 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
+--- !u!114 &8910876681540902177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 291779848336703494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &4150033802353302820
 GameObject:
   m_ObjectHideFlags: 0

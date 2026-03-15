@@ -399,7 +399,8 @@ GameObject:
   - component: {fileID: 7688632524224172637}
   - component: {fileID: 7776404433818038876}
   - component: {fileID: 3524244349056593962}
-  m_Layer: 0
+  - component: {fileID: 144332261249877086}
+  m_Layer: 9
   m_Name: Hut
   m_TagString: House
   m_Icon: {fileID: 0}
@@ -472,6 +473,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.45703116, y: 0.48024282, z: 0.5859802}
   m_Center: {x: 0.015879218, y: 0.23502082, z: -0.003351904}
+--- !u!114 &144332261249877086
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7895232663079955953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1001 &372867448857824716
 PrefabInstance:
   m_ObjectHideFlags: 0

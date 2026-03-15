@@ -124,7 +124,8 @@ GameObject:
   - component: {fileID: 5053827892376536864}
   - component: {fileID: 5229127011181624367}
   - component: {fileID: 8349917577976019121}
-  m_Layer: 0
+  - component: {fileID: 790079388247086997}
+  m_Layer: 9
   m_Name: Green Forest
   m_TagString: Forest
   m_Icon: {fileID: 0}
@@ -198,6 +199,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.3973246, y: 0.54427886, z: 2.0354273}
   m_Center: {x: -0.045236386, y: 0.22786099, z: 0.098851174}
+--- !u!114 &790079388247086997
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2448230816259451842}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ff8323460a169a42bff5eba1baa1a03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnapToSand
+  sandLayer:
+    serializedVersion: 2
+    m_Bits: 256
 --- !u!1 &3622791363174952764
 GameObject:
   m_ObjectHideFlags: 0
