@@ -55,7 +55,7 @@ MonoBehaviour:
   _forwardElement: {fileID: 0}
   _oneGrabTransformer: {fileID: 6245118586419280345}
   _twoGrabTransformer: {fileID: 6245118586419280345}
-  _targetTransform: {fileID: 0}
+  _targetTransform: {fileID: 3257003741539107984}
   _maxGrabPoints: -1
   _rigidbody: {fileID: 6170649518990508346}
   _kinematicWhileSelected: 1

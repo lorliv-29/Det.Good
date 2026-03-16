@@ -10,15 +10,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.02
+      value: 0.04
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.02
+      value: 0.04
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.02
+      value: 0.04
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 74fceb65eca444f47af46f3a91d4c2f0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -134,20 +134,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6435db4d9eaff8f40aca62ba40b3375e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Wanderer
-  territoryHalfX: 0.05
-  territoryHalfZ: 0.05
-  minWait: 1
-  maxWait: 2.5
-  waypointTolerance: 0.03
-  sampleRadius: 0.05
-  stepDistance: 0.05
-  turnJitterDegrees: 15
-  bigTurnChance: 0.08
-  bigTurnRange: {x: 7, y: 305}
-  homePull: 0.55
-  agentSpeed: 0.05
-  agentAcceleration: 1.2
-  agentAngularSpeed: 140
+  territoryHalfX: 1.5
+  territoryHalfZ: 1
+  minWait: 0.5
+  maxWait: 2
+  waypointTolerance: 0.7
+  sampleRadius: 2
+  stepDistance: 3
+  turnJitterDegrees: 35
+  bigTurnChance: 0.12
+  bigTurnRange: {x: 80, y: 160}
+  homePull: 0.35
+  agentSpeed: 0.6
+  agentAcceleration: 2
+  agentAngularSpeed: 180
 --- !u!136 &-3340432759794236503
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -178,7 +178,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5832102151915319507}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e957f3f8b7098814198a64ffc92a83b0, type: 3}
   m_Name: 

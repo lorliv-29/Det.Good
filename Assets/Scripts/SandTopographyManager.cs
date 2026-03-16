@@ -34,10 +34,6 @@ public class SandTopographyManager : MonoBehaviour
     [Header("Vertical Crop (World Space)")]
     public float bottomClipY = 0.0f;
 
-    [Header("Perimeter Protection")]
-    [Tooltip("Inner border around the sandbox where points are frozen to prevent hand junk near the edges.")]
-    public float perimeterMargin = 0.08f;
-
     [Header("Height Controls")]
     [Tooltip("Above this world-space height, terrain stops updating and keeps the previous stable terrain.")]
     public float occlusionFreezeY = 1.95f;
@@ -193,7 +189,6 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_MaxX", maxX);
         sandCalibrator.SetFloat("_MinZ", minZ);
         sandCalibrator.SetFloat("_MaxZ", maxZ);
-        sandCalibrator.SetFloat("_PerimeterMargin", perimeterMargin);
         sandCalibrator.SetFloat("_HardDeleteY", hardDeleteY);
         sandCalibrator.SetFloat("_BottomClipY", bottomClipY);
 
@@ -206,7 +201,6 @@ public class SandTopographyManager : MonoBehaviour
         sandCalibrator.SetFloat("_JitterThreshold", jitterThreshold);
         sandCalibrator.SetFloat("_OcclusionFreezeY", occlusionFreezeY);
         sandCalibrator.SetFloat("_HardDeleteY", hardDeleteY);
-        sandCalibrator.SetFloat("_PerimeterMargin", perimeterMargin);
         sandCalibrator.SetInt("_VertexCount", vertexCount);
 
         sandCalibrator.Dispatch(smoothKernel, threadGroups, 1, 1);
