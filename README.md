@@ -19,7 +19,16 @@ GodBox was developed as part of the **Design for Emerging Technologies (DET)** c
 See more information about the project at:  
 https://extralitylab.dsv.su.se/project/det/
 
+---
+
+## Demo Video
+
+▶️ **Watch the GodBox demo**
+
+https://streamable.com/8ix3tu
+
 The project investigates how **physical materials can act as interfaces for digital systems**.
+
 
 ---
 
