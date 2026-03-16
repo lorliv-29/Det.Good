@@ -1,4 +1,4 @@
-# 🌍 GodBox
+# 🌍 GodBox 
 
 > An XR sandbox system where shaping physical sand alters a corresponding digital landscape in real time.
 
