@@ -40,8 +40,7 @@ public class PeopleApproachController : MonoBehaviour
 
         if (Time.time >= nextRepathTime)
         {
-            Vector3 target = targetPlayer.position;
-            agent.SetDestination(target);
+            agent.SetDestination(targetPlayer.position);
             nextRepathTime = Time.time + repathInterval;
         }
     }
@@ -50,6 +49,10 @@ public class PeopleApproachController : MonoBehaviour
     {
         targetPlayer = player;
         isApproaching = true;
+
+        Wanderer wanderer = GetComponent<Wanderer>();
+        if (wanderer != null)
+            wanderer.PauseWandering();
 
         if (agent != null && agent.isOnNavMesh)
         {

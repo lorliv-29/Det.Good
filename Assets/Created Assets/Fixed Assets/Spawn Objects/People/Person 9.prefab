@@ -91,6 +91,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3a71a9f53e85b384bb344ecb4bde2e94, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2163248129793626260}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 3a71a9f53e85b384bb344ecb4bde2e94, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7198353016166138869}
   m_SourcePrefab: {fileID: 100100000, guid: 3a71a9f53e85b384bb344ecb4bde2e94, type: 3}
 --- !u!1 &1433516609278132905 stripped
 GameObject:
@@ -215,3 +218,20 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7198353016166138869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1433516609278132905}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13f9c07b1770893429924d3d519b01ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PeopleApproachController
+  approachSpeed: 0.5
+  approachAcceleration: 1.5
+  approachAngularSpeed: 120
+  stoppingDistance: 1.25
+  repathInterval: 0.5

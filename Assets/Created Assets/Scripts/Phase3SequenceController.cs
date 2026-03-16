@@ -1,14 +1,12 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
 public class Phase3SequenceController : MonoBehaviour
 {
-    [Header("Phase 3 Start")]
-    [Tooltip("The main little dude who should keep wandering for a while first.")]
-    public Wanderer littleDudeWanderer;
-
-    [Tooltip("How long the little dude keeps wandering before the next phase begins.")]
+    [Header("Phase 3 Wander")]
+    [Tooltip("How long all wanderers keep wandering before convergence begins.")]
     public float phase3WanderDuration = 20f;
 
     [Header("Player")]
@@ -44,6 +42,10 @@ public class Phase3SequenceController : MonoBehaviour
     [Tooltip("Delay after the people gather before showing the light and text.")]
     public float endingDelay = 1.0f;
 
+    [Header("Optional Filtering")]
+    [Tooltip("If true, only objects tagged People will be paused as wanderers.")]
+    public bool onlyAffectPeopleTag = true;
+
     bool sequenceStarted;
 
     public void StartPhase3()
@@ -57,17 +59,34 @@ public class Phase3SequenceController : MonoBehaviour
 
     IEnumerator Phase3Routine()
     {
-        // Let the little dude keep wandering for a while
-        if (littleDudeWanderer != null)
-            littleDudeWanderer.ResumeWandering();
+        // Find all current wanderers
+        Wanderer[] wanderers = FindObjectsOfType<Wanderer>();
 
+        List<Wanderer> validWanderers = new List<Wanderer>();
+
+        foreach (Wanderer w in wanderers)
+        {
+            if (w == null)
+                continue;
+
+            if (onlyAffectPeopleTag && !w.CompareTag("People"))
+                continue;
+
+            validWanderers.Add(w);
+            w.ResumeWandering();
+        }
+
+        // Let them wander for a while
         yield return new WaitForSeconds(phase3WanderDuration);
 
-        // Stop the little dude
-        if (littleDudeWanderer != null)
-            littleDudeWanderer.PauseWandering();
+        // Stop all wanderers
+        foreach (Wanderer w in validWanderers)
+        {
+            if (w != null)
+                w.PauseWandering();
+        }
 
-        // Start the people approach phase
+        // Start approach phase for all people
         PeopleApproachController[] people = FindObjectsOfType<PeopleApproachController>();
 
         foreach (var p in people)
