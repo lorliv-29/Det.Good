@@ -12,12 +12,9 @@ public class Phase3SequenceController : MonoBehaviour
     [Header("Player")]
     public Transform player;
 
-    [Header("People Converge")]
-    [Tooltip("How long to wait for the people to gather before triggering the ending anyway.")]
-    public float peopleGatherTimeout = 12f;
-
-    [Tooltip("Distance at which we consider a person to have reached the player.")]
-    public float gatherDistance = 1.8f;
+    [Header("Approach Phase")]
+    [Tooltip("How long the people chant and approach before the final text appears.")]
+    public float approachPhaseDuration = 10f;
 
     [Header("Audio")]
     [Tooltip("Optional chanting audio source. Will play when the people begin approaching.")]
@@ -39,9 +36,6 @@ public class Phase3SequenceController : MonoBehaviour
     [TextArea(2, 4)]
     public string finalMessage = "The world you shaped now looks back at you. Your people have chosen their God.";
 
-    [Tooltip("Delay after the people gather before showing the light and text.")]
-    public float endingDelay = 1.0f;
-
     [Header("Optional Filtering")]
     [Tooltip("If true, only objects tagged People will be paused as wanderers.")]
     public bool onlyAffectPeopleTag = true;
@@ -61,7 +55,6 @@ public class Phase3SequenceController : MonoBehaviour
     {
         // Find all current wanderers
         Wanderer[] wanderers = FindObjectsOfType<Wanderer>();
-
         List<Wanderer> validWanderers = new List<Wanderer>();
 
         foreach (Wanderer w in wanderers)
@@ -76,20 +69,27 @@ public class Phase3SequenceController : MonoBehaviour
             w.ResumeWandering();
         }
 
-        // Let them wander for a while
+        // 1) Wander for 20 seconds
         yield return new WaitForSeconds(phase3WanderDuration);
 
-        // Stop all wanderers
-        foreach (Wanderer w in validWanderers)
+        // Re-scan in case more people spawned during the wait
+        Wanderer[] allWanderersNow = FindObjectsOfType<Wanderer>();
+
+        foreach (Wanderer w in allWanderersNow)
         {
-            if (w != null)
-                w.PauseWandering();
+            if (w == null)
+                continue;
+
+            if (onlyAffectPeopleTag && !w.CompareTag("People"))
+                continue;
+
+            w.PauseWandering();
         }
 
-        // Start approach phase for all people
+        // 2) Start people approaching
         PeopleApproachController[] people = FindObjectsOfType<PeopleApproachController>();
 
-        foreach (var p in people)
+        foreach (PeopleApproachController p in people)
         {
             if (p != null && p.CompareTag("People"))
             {
@@ -97,52 +97,21 @@ public class Phase3SequenceController : MonoBehaviour
             }
         }
 
+        // 3) Start chanting
         if (chantingAudioSource != null && !chantingAudioSource.isPlaying)
             chantingAudioSource.Play();
 
-        float timer = 0f;
+        // 4) Show bright light immediately during the approach phase
+        ShowWhiteLight();
 
-        while (timer < peopleGatherTimeout)
-        {
-            if (AllPeopleReachedPlayer(people))
-                break;
+        // 5) Let this phase run for 10 seconds
+        yield return new WaitForSeconds(approachPhaseDuration);
 
-            timer += Time.deltaTime;
-            yield return null;
-        }
-
-        yield return new WaitForSeconds(endingDelay);
-
-        TriggerEnding();
+        // 6) Then show the final text
+        ShowEndingText();
     }
 
-    bool AllPeopleReachedPlayer(PeopleApproachController[] people)
-    {
-        if (player == null)
-            return false;
-
-        bool foundAny = false;
-
-        foreach (var p in people)
-        {
-            if (p == null || !p.CompareTag("People"))
-                continue;
-
-            foundAny = true;
-
-            float dist = Vector3.Distance(
-                new Vector3(p.transform.position.x, 0f, p.transform.position.z),
-                new Vector3(player.position.x, 0f, player.position.z)
-            );
-
-            if (dist > gatherDistance)
-                return false;
-        }
-
-        return foundAny;
-    }
-
-    void TriggerEnding()
+    void ShowWhiteLight()
     {
         if (whiteLightParticle != null && player != null)
         {
@@ -163,7 +132,10 @@ public class Phase3SequenceController : MonoBehaviour
             whiteLightParticle.gameObject.SetActive(true);
             whiteLightParticle.Play();
         }
+    }
 
+    void ShowEndingText()
+    {
         if (endingText != null)
         {
             endingText.text = finalMessage;
