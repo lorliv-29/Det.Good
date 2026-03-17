@@ -52,6 +52,13 @@ public class Wanderer : MonoBehaviour
     [Tooltip("How quickly the agent turns.")]
     public float agentAngularSpeed = 180f;
 
+    [Header("Phase 3 Approach")]
+    [Tooltip("How often to refresh the path toward the target.")]
+    public float targetRefreshInterval = 0.35f;
+
+    [Tooltip("How close they should get to the player.")]
+    public float approachStoppingDistance = 0.35f;
+
     NavMeshAgent agent;
     float nextMoveTime;
 
@@ -60,6 +67,10 @@ public class Wanderer : MonoBehaviour
 
     Vector3 heading;
     bool isPaused;
+
+    bool isApproachingTarget;
+    Transform currentTarget;
+    float nextTargetRefreshTime;
 
     const int k_SampleAttempts = 5;
 
@@ -101,6 +112,12 @@ public class Wanderer : MonoBehaviour
         if (!homeSet || agent == null || !agent.isOnNavMesh)
             return;
 
+        if (isApproachingTarget)
+        {
+            UpdateApproachTarget();
+            return;
+        }
+
         bool reached =
             !agent.pathPending &&
             agent.remainingDistance <= waypointTolerance;
@@ -109,6 +126,30 @@ public class Wanderer : MonoBehaviour
         {
             TrySetNextMeanderDestination();
             ScheduleNextMove(Random.Range(minWait, maxWait));
+        }
+    }
+
+    void UpdateApproachTarget()
+    {
+        if (currentTarget == null)
+            return;
+
+        if (Time.time < nextTargetRefreshTime)
+            return;
+
+        nextTargetRefreshTime = Time.time + Mathf.Max(0.05f, targetRefreshInterval);
+
+        Vector3 desired = currentTarget.position;
+
+        if (NavMesh.SamplePosition(desired, out NavMeshHit hit, sampleRadius * 2f, NavMesh.AllAreas))
+        {
+            if (agent.stoppingDistance != approachStoppingDistance)
+                agent.stoppingDistance = approachStoppingDistance;
+
+            if (agent.isStopped)
+                agent.isStopped = false;
+
+            agent.SetDestination(hit.position);
         }
     }
 
@@ -131,10 +172,43 @@ public class Wanderer : MonoBehaviour
     public void ResumeWandering()
     {
         isPaused = false;
+        isApproachingTarget = false;
+        currentTarget = null;
 
         if (agent != null && agent.isOnNavMesh)
         {
             agent.isStopped = false;
+            agent.stoppingDistance = waypointTolerance;
+            ScheduleNextMove(0.1f);
+        }
+    }
+
+    public void StartApproachingTarget(Transform target)
+    {
+        if (agent == null || !agent.isOnNavMesh || target == null)
+            return;
+
+        isPaused = false;
+        isApproachingTarget = true;
+        currentTarget = target;
+        nextTargetRefreshTime = 0f;
+
+        agent.isStopped = false;
+        agent.autoBraking = true;
+        agent.stoppingDistance = approachStoppingDistance;
+
+        UpdateApproachTarget();
+    }
+
+    public void StopApproachingTarget()
+    {
+        isApproachingTarget = false;
+        currentTarget = null;
+
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.isStopped = false;
+            agent.stoppingDistance = waypointTolerance;
             ScheduleNextMove(0.1f);
         }
     }
@@ -283,6 +357,9 @@ public class Wanderer : MonoBehaviour
         agentSpeed = Mathf.Max(0.01f, agentSpeed);
         agentAcceleration = Mathf.Max(0.01f, agentAcceleration);
         agentAngularSpeed = Mathf.Max(0.01f, agentAngularSpeed);
+
+        targetRefreshInterval = Mathf.Max(0.05f, targetRefreshInterval);
+        approachStoppingDistance = Mathf.Max(0.01f, approachStoppingDistance);
 
         if (agent != null)
         {

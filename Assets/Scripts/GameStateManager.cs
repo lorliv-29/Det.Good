@@ -28,7 +28,7 @@ public class GameStateManager : MonoBehaviour
     public Transform landingPoint;
     public TunnelingEffect tunnelingEffect;
     public float transitionTime = 1.5f;
-    public float miniScale = 0.01f;
+    public float miniScale = 0.005f;
 
     private Vector3 godViewPosition;
     private Quaternion godViewRotation;
@@ -153,7 +153,28 @@ public class GameStateManager : MonoBehaviour
             tunnelingEffect.enabled = false;
         }
 
+        TriggerPeopleApproach();
+
         isTransitioning = false;
+    }
+
+    public void TriggerPeopleApproach()
+    {
+        if (ovrCameraRig == null)
+            return;
+
+        GameObject[] people = GameObject.FindGameObjectsWithTag("People");
+
+        foreach (GameObject person in people)
+        {
+            if (person == null) continue;
+
+            Wanderer wanderer = person.GetComponent<Wanderer>();
+            if (wanderer != null)
+            {
+                wanderer.StartApproachingTarget(ovrCameraRig);
+            }
+        }
     }
 
     public void ExitDiveMode()
