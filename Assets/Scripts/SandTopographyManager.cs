@@ -226,6 +226,17 @@ public class SandTopographyManager : MonoBehaviour
             }
         }
     }
+    // Forces the mesh to bake (called by the UI)
+    public void ForceBakeMesh()
+    {
+        isEditMode = false;
+
+        if (meshBuilder != null && _calibratedBuffer != null)
+        {
+            meshBuilder.gameObject.SetActive(true);
+            meshBuilder.GeneratePhysicalMesh(_calibratedBuffer);
+        }
+    }
 
     private void ReleaseBuffer(ref ComputeBuffer buffer)
     {

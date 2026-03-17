@@ -24,6 +24,7 @@ public class GodboxUIFlowController : MonoBehaviour
     public GameStateManager gameStateManager;
     public Phase3SequenceController phase3SequenceController;
     public Transform headOrCamera;
+    public SandTopographyManager sandManager;
 
     [Header("Intro UI")]
     public GameObject introVideoPanel;
@@ -338,6 +339,9 @@ public class GodboxUIFlowController : MonoBehaviour
 
         if (gameStateManager != null)
             gameStateManager.EnterPhase2();
+
+        // TRIGGER THE SAND BAKE 
+        if (sandManager != null) sandManager.ForceBakeMesh();
 
         if (phase2TextRoot != null)
         {
