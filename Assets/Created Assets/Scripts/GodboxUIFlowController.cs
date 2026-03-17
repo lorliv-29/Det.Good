@@ -1,12 +1,14 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Video;
+using TMPro;
 
 public class GodboxUIFlowController : MonoBehaviour
 {
     public enum UIFlowState
     {
         IntroVideo,
+        TransitionToPhase1,
         Phase1,
         Phase2,
         Phase3,
@@ -24,18 +26,25 @@ public class GodboxUIFlowController : MonoBehaviour
     public GameObject beginCreatingButton;
     public CanvasGroup introVideoPanelCanvasGroup;
 
+    [Header("Transition UI")]
+    public GameObject introTransitionPanel;
+    public TMP_Text introTransitionText;
+    public string introTransitionMessage = "Preparing your sandbox...";
+    public float minimumTransitionTime = 1.5f;
+
     [Header("Intro Timing")]
-    [Tooltip("How long the video panel takes to fade in.")]
     public float introPanelFadeDuration = 1.0f;
-
-    [Tooltip("How long to wait after the panel fades in before starting the video.")]
     public float preVideoDelay = 0.75f;
-
-    [Tooltip("If true, prepares the video before the panel fade starts to avoid a rogue first frame.")]
     public bool prepareVideoBeforeFade = true;
 
     [Header("Objects Hidden During Intro")]
     public GameObject[] hideDuringIntro;
+
+    [Header("Objects Hidden During Phase 1")]
+    public GameObject[] hideDuringPhase1;
+
+    [Header("Objects Hidden During Phase 3")]
+    public GameObject[] hideDuringPhase3;
 
     [Header("Phase Buttons")]
     public GameObject goToPhase2Button;
@@ -79,8 +88,9 @@ public class GodboxUIFlowController : MonoBehaviour
     {
         currentState = UIFlowState.IntroVideo;
 
-        // Hide all gameplay objects
         SetObjectsActive(hideDuringIntro, false);
+        SetObjectsActive(hideDuringPhase1, false);
+        SetObjectsActive(hideDuringPhase3, true);
 
         if (phase1TextRoot != null) phase1TextRoot.SetActive(false);
         if (phase2TextRoot != null) phase2TextRoot.SetActive(false);
@@ -94,7 +104,8 @@ public class GodboxUIFlowController : MonoBehaviour
         if (endingTextObject != null) endingTextObject.SetActive(false);
         if (whiteLightObject != null) whiteLightObject.SetActive(false);
 
-        // Show only intro panel
+        if (introTransitionPanel != null) introTransitionPanel.SetActive(false);
+
         if (introVideoPanel != null) introVideoPanel.SetActive(true);
         if (beginCreatingButton != null) beginCreatingButton.SetActive(false);
 
@@ -123,22 +134,18 @@ public class GodboxUIFlowController : MonoBehaviour
 
     IEnumerator IntroSequence()
     {
-        // Optional video prepare so the first frame doesn't flash badly
         if (introVideoPlayer != null && prepareVideoBeforeFade)
         {
             introVideoPlayer.Prepare();
-
             while (!introVideoPlayer.isPrepared)
             {
                 yield return null;
             }
         }
 
-        // Make sure panel is active before fading
         if (introVideoPanel != null)
             introVideoPanel.SetActive(true);
 
-        // Fade in the panel
         if (introVideoPanelCanvasGroup != null)
         {
             float elapsed = 0f;
@@ -152,19 +159,15 @@ public class GodboxUIFlowController : MonoBehaviour
             }
 
             introVideoPanelCanvasGroup.alpha = 1f;
+            introVideoPanelCanvasGroup.interactable = true;
+            introVideoPanelCanvasGroup.blocksRaycasts = true;
         }
 
-        // Small pause so player can orient themselves
         if (preVideoDelay > 0f)
-        {
             yield return new WaitForSecondsRealtime(preVideoDelay);
-        }
 
-        // Start video only after panel is visible
         if (introVideoPlayer != null)
-        {
             introVideoPlayer.Play();
-        }
 
         introSequenceCoroutine = null;
     }
@@ -180,7 +183,12 @@ public class GodboxUIFlowController : MonoBehaviour
         if (currentState != UIFlowState.IntroVideo)
             return;
 
-        currentState = UIFlowState.Phase1;
+        StartCoroutine(BeginCreatingTransition());
+    }
+
+    IEnumerator BeginCreatingTransition()
+    {
+        currentState = UIFlowState.TransitionToPhase1;
 
         if (introSequenceCoroutine != null)
         {
@@ -189,15 +197,38 @@ public class GodboxUIFlowController : MonoBehaviour
         }
 
         if (introVideoPlayer != null)
-        {
             introVideoPlayer.Stop();
-        }
 
-        if (introVideoPanel != null) introVideoPanel.SetActive(false);
-        if (beginCreatingButton != null) beginCreatingButton.SetActive(false);
+        if (beginCreatingButton != null)
+            beginCreatingButton.SetActive(false);
+
+        if (introVideoPanel != null)
+            introVideoPanel.SetActive(false);
+
+        if (introTransitionPanel != null)
+            introTransitionPanel.SetActive(true);
+
+        if (introTransitionText != null)
+            introTransitionText.text = introTransitionMessage;
+
+        float startTime = Time.realtimeSinceStartup;
+
+        yield return null;
+        yield return new WaitForEndOfFrame();
+
+        SetObjectsActive(hideDuringIntro, true);
 
         gameStateManager.EnterPhase1();
 
+        while (Time.realtimeSinceStartup - startTime < minimumTransitionTime)
+        {
+            yield return null;
+        }
+
+        if (introTransitionPanel != null)
+            introTransitionPanel.SetActive(false);
+
+        currentState = UIFlowState.Phase1;
         ShowPhase1();
     }
 
@@ -209,8 +240,8 @@ public class GodboxUIFlowController : MonoBehaviour
         if (creationCatalogue != null) creationCatalogue.SetActive(false);
         if (goToPhase3Button != null) goToPhase3Button.SetActive(false);
 
-        // Reveal all intro-hidden scene objects now
-        SetObjectsActive(hideDuringIntro, true);
+        SetObjectsActive(hideDuringPhase1, false);
+        SetObjectsActive(hideDuringPhase3, true);
 
         if (phase1TextRoot != null)
         {
@@ -232,6 +263,9 @@ public class GodboxUIFlowController : MonoBehaviour
 
         if (phase1TextRoot != null) phase1TextRoot.SetActive(false);
         if (goToPhase2Button != null) goToPhase2Button.SetActive(false);
+
+        SetObjectsActive(hideDuringPhase1, true);
+        SetObjectsActive(hideDuringPhase3, true);
 
         gameStateManager.EnterPhase2();
 
@@ -259,6 +293,8 @@ public class GodboxUIFlowController : MonoBehaviour
         if (phase2TextRoot != null) phase2TextRoot.SetActive(false);
         if (goToPhase3Button != null) goToPhase3Button.SetActive(false);
         if (creationCatalogue != null) creationCatalogue.SetActive(false);
+
+        SetObjectsActive(hideDuringPhase3, false);
 
         if (phase3TextRoot != null)
         {
