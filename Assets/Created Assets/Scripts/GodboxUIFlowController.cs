@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Video;
 using TMPro;
@@ -8,12 +8,17 @@ public class GodboxUIFlowController : MonoBehaviour
     public enum UIFlowState
     {
         IntroVideo,
-        TransitionToPhase1,
+        LoadingPhase1,
         Phase1,
         Phase2,
         Phase3,
         Ended
     }
+
+    [Header("Black Transition")]
+    public CanvasGroup transitionCanvasGroup;
+    public float fadeToBlackDuration = 0.4f;
+    public float fadeFromBlackDuration = 0.6f;
 
     [Header("Core References")]
     public GameStateManager gameStateManager;
@@ -46,6 +51,10 @@ public class GodboxUIFlowController : MonoBehaviour
     [Header("Objects Hidden During Phase 3")]
     public GameObject[] hideDuringPhase3;
 
+    [Header("Problem Objects To Force Off In Phase 1")]
+    public GameObject spawnPlatform;
+    public GameObject phaseMenu;
+
     [Header("Phase Buttons")]
     public GameObject goToPhase2Button;
     public GameObject goToPhase3Button;
@@ -66,6 +75,9 @@ public class GodboxUIFlowController : MonoBehaviour
     public float textSpawnDistance = 0.8f;
     public float textMoveDistance = 2f;
     public float textMoveDuration = 2.5f;
+
+    [Header("Debug")]
+    public bool enableDebugLogs = true;
 
     public UIFlowState currentState = UIFlowState.IntroVideo;
 
@@ -188,7 +200,10 @@ public class GodboxUIFlowController : MonoBehaviour
 
     IEnumerator BeginCreatingTransition()
     {
-        currentState = UIFlowState.TransitionToPhase1;
+        currentState = UIFlowState.LoadingPhase1;
+
+        if (gameStateManager != null)
+            gameStateManager.EnterLoadingScreen();
 
         if (introSequenceCoroutine != null)
         {
@@ -202,38 +217,75 @@ public class GodboxUIFlowController : MonoBehaviour
         if (beginCreatingButton != null)
             beginCreatingButton.SetActive(false);
 
-        if (introVideoPanel != null)
-            introVideoPanel.SetActive(false);
-
-        if (introTransitionPanel != null)
-            introTransitionPanel.SetActive(true);
-
-        if (introTransitionText != null)
-            introTransitionText.text = introTransitionMessage;
-
-        float startTime = Time.realtimeSinceStartup;
+        if (transitionCanvasGroup != null)
+        {
+            transitionCanvasGroup.gameObject.SetActive(true);
+            transitionCanvasGroup.alpha = 1f;
+            transitionCanvasGroup.blocksRaycasts = true;
+            transitionCanvasGroup.interactable = true;
+        }
 
         yield return null;
         yield return new WaitForEndOfFrame();
 
-        SetObjectsActive(hideDuringIntro, true);
+        if (introVideoPanel != null)
+            introVideoPanel.SetActive(false);
 
-        gameStateManager.EnterPhase1();
+        if (introTransitionPanel != null)
+            introTransitionPanel.SetActive(false);
+
+        float startTime = Time.realtimeSinceStartup;
+
+        SetObjectsActive(hideDuringIntro, true);
+        yield return null;
+
+        if (gameStateManager != null)
+            gameStateManager.EnterPhase1();
+        yield return null;
+
+        currentState = UIFlowState.Phase1;
+        ShowPhase1();
+        yield return null;
 
         while (Time.realtimeSinceStartup - startTime < minimumTransitionTime)
         {
             yield return null;
         }
 
-        if (introTransitionPanel != null)
-            introTransitionPanel.SetActive(false);
+        yield return StartCoroutine(FadeCanvasGroup(transitionCanvasGroup, 1f, 0f, fadeFromBlackDuration));
 
-        currentState = UIFlowState.Phase1;
-        ShowPhase1();
+        if (transitionCanvasGroup != null)
+        {
+            transitionCanvasGroup.blocksRaycasts = false;
+            transitionCanvasGroup.interactable = false;
+        }
+    }
+
+    IEnumerator FadeCanvasGroup(CanvasGroup cg, float from, float to, float duration)
+    {
+        if (cg == null)
+            yield break;
+
+        float elapsed = 0f;
+        cg.alpha = from;
+        cg.blocksRaycasts = true;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            cg.alpha = Mathf.Lerp(from, to, t);
+            yield return null;
+        }
+
+        cg.alpha = to;
+        cg.blocksRaycasts = (to > 0.9f);
     }
 
     void ShowPhase1()
     {
+        if (enableDebugLogs) Debug.Log("=== ShowPhase1 START ===");
+
         if (phase2TextRoot != null) phase2TextRoot.SetActive(false);
         if (phase3TextRoot != null) phase3TextRoot.SetActive(false);
 
@@ -242,6 +294,19 @@ public class GodboxUIFlowController : MonoBehaviour
 
         SetObjectsActive(hideDuringPhase1, false);
         SetObjectsActive(hideDuringPhase3, true);
+
+        // Force problem objects off again after all other phase setup.
+        if (spawnPlatform != null)
+        {
+            spawnPlatform.SetActive(false);
+            LogObjectState("Forced OFF spawnPlatform in Phase1", spawnPlatform);
+        }
+
+        if (phaseMenu != null)
+        {
+            phaseMenu.SetActive(false);
+            LogObjectState("Forced OFF phaseMenu in Phase1", phaseMenu);
+        }
 
         if (phase1TextRoot != null)
         {
@@ -252,6 +317,10 @@ public class GodboxUIFlowController : MonoBehaviour
 
         if (goToPhase2Button != null)
             goToPhase2Button.SetActive(true);
+
+        StartCoroutine(CheckProblemObjects());
+
+        if (enableDebugLogs) Debug.Log("=== ShowPhase1 END ===");
     }
 
     public void GoToPhase2()
@@ -267,7 +336,8 @@ public class GodboxUIFlowController : MonoBehaviour
         SetObjectsActive(hideDuringPhase1, true);
         SetObjectsActive(hideDuringPhase3, true);
 
-        gameStateManager.EnterPhase2();
+        if (gameStateManager != null)
+            gameStateManager.EnterPhase2();
 
         if (phase2TextRoot != null)
         {
@@ -303,7 +373,9 @@ public class GodboxUIFlowController : MonoBehaviour
             StartCoroutine(AnimateTextBackwards(phase3TextRoot.transform));
         }
 
-        gameStateManager.EnterPhase3();
+        if (gameStateManager != null)
+            gameStateManager.EnterPhase3();
+
         StartCoroutine(BeginPhase3SequenceAfterDelay(1.8f));
     }
 
@@ -321,9 +393,47 @@ public class GodboxUIFlowController : MonoBehaviour
 
         foreach (GameObject obj in objects)
         {
-            if (obj != null)
-                obj.SetActive(state);
+            if (obj == null) continue;
+
+            obj.SetActive(state);
+            LogObjectState("SetObjectsActive", obj);
         }
+    }
+
+    void LogObjectState(string label, GameObject obj)
+    {
+        if (!enableDebugLogs) return;
+
+        if (obj == null)
+        {
+            Debug.Log(label + " -> NULL");
+            return;
+        }
+
+        Debug.Log(
+            label + " -> " + obj.name +
+            " | activeSelf=" + obj.activeSelf +
+            " | activeInHierarchy=" + obj.activeInHierarchy
+        );
+    }
+
+    IEnumerator CheckProblemObjects()
+    {
+        yield return null;
+
+        if (spawnPlatform != null)
+            LogObjectState("1 frame later spawnPlatform", spawnPlatform);
+
+        if (phaseMenu != null)
+            LogObjectState("1 frame later phaseMenu", phaseMenu);
+
+        yield return new WaitForSeconds(0.2f);
+
+        if (spawnPlatform != null)
+            LogObjectState("0.2s later spawnPlatform", spawnPlatform);
+
+        if (phaseMenu != null)
+            LogObjectState("0.2s later phaseMenu", phaseMenu);
     }
 
     void PlaceTextInFrontOfPlayer(GameObject textRoot)

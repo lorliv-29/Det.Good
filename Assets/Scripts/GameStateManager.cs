@@ -9,6 +9,7 @@ public class GameStateManager : MonoBehaviour
     public enum GamePhase
     {
         Intro,
+        LoadingScreen,
         Phase1_Shape,
         Phase2_Create,
         Phase3_Observe
@@ -27,7 +28,7 @@ public class GameStateManager : MonoBehaviour
     public Transform landingPoint;
     public TunnelingEffect tunnelingEffect;
     public float transitionTime = 1.5f;
-    public float miniScale = 0.02f;
+    public float miniScale = 0.01f;
 
     private Vector3 godViewPosition;
     private Quaternion godViewRotation;
@@ -44,7 +45,6 @@ public class GameStateManager : MonoBehaviour
 
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            // Dev only: go back to phase 1 if needed
             ReturnToPhase1Dev();
         }
 
@@ -52,6 +52,11 @@ public class GameStateManager : MonoBehaviour
         {
             EnterPhase3();
         }
+    }
+
+    public void EnterLoadingScreen()
+    {
+        currentPhase = GamePhase.LoadingScreen;
     }
 
     public void EnterPhase1()
@@ -91,7 +96,6 @@ public class GameStateManager : MonoBehaviour
 
     public void ReturnToPhase1Dev()
     {
-        // DEV ONLY
         currentPhase = GamePhase.Phase1_Shape;
         ExitDiveMode();
     }

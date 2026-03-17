@@ -1,7 +1,11 @@
 using UnityEngine;
+using System.Collections;
 
 public class UIPlatformSpawner : MonoBehaviour
 {
+    [Header("Core Reference")]
+    public GameStateManager gameStateManager;
+
     [Header("Spawn Settings")]
     public Transform spawnPoint;
     public float spawnScale = 1f;
@@ -12,14 +16,26 @@ public class UIPlatformSpawner : MonoBehaviour
     private bool previewWasInsideTrigger = false;
     private bool isRespawning = false;
 
+    bool IsPhase2()
+    {
+        return gameStateManager != null &&
+               gameStateManager.currentPhase == GameStateManager.GamePhase.Phase2_Create;
+    }
+
     public void SpawnFromCategory(GameObject prefab)
     {
+        if (!IsPhase2())
+            return;
+
         currentPrefab = prefab;
         ReplacePreview();
     }
 
     void ReplacePreview()
     {
+        if (!IsPhase2())
+            return;
+
         if (currentPreview != null)
         {
             Destroy(currentPreview);
@@ -34,6 +50,9 @@ public class UIPlatformSpawner : MonoBehaviour
 
     void SpawnPreview()
     {
+        if (!IsPhase2())
+            return;
+
         if (currentPrefab == null || spawnPoint == null || currentPreview != null)
             return;
 
@@ -44,11 +63,10 @@ public class UIPlatformSpawner : MonoBehaviour
         if (rb != null)
             rb.isKinematic = true;
 
-        // Give physics one frame to settle before we allow respawn logic
         StartCoroutine(EnablePreviewCheckNextFrame());
     }
 
-    System.Collections.IEnumerator EnablePreviewCheckNextFrame()
+    IEnumerator EnablePreviewCheckNextFrame()
     {
         yield return null;
         isRespawning = false;
@@ -56,7 +74,11 @@ public class UIPlatformSpawner : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (currentPreview == null) return;
+        if (!IsPhase2())
+            return;
+
+        if (currentPreview == null)
+            return;
 
         GameObject root = GetRootObject(other);
 
@@ -68,8 +90,14 @@ public class UIPlatformSpawner : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (currentPreview == null) return;
-        if (isRespawning) return;
+        if (!IsPhase2())
+            return;
+
+        if (currentPreview == null)
+            return;
+
+        if (isRespawning)
+            return;
 
         GameObject root = GetRootObject(other);
 
@@ -78,7 +106,6 @@ public class UIPlatformSpawner : MonoBehaviour
             isRespawning = true;
             previewWasInsideTrigger = false;
 
-            // The old object stays in the world
             Rigidbody rb = currentPreview.GetComponent<Rigidbody>();
             if (rb != null)
                 rb.isKinematic = false;
@@ -94,5 +121,17 @@ public class UIPlatformSpawner : MonoBehaviour
             return col.attachedRigidbody.gameObject;
 
         return col.transform.root.gameObject;
+    }
+
+    public void ClearPreview()
+    {
+        if (currentPreview != null)
+        {
+            Destroy(currentPreview);
+            currentPreview = null;
+        }
+
+        previewWasInsideTrigger = false;
+        isRespawning = false;
     }
 }
