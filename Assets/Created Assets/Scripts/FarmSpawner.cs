@@ -1,12 +1,11 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class FarmSpawner : MonoBehaviour
 {
-    [Header("Tags")]
-    public string animalTag = "Animal";
-
     [Header("Animal Prefabs")]
     [Tooltip("Prefabs to spawn. Each prefab should have a NavMeshAgent and (optionally) a Wanderer.")]
     public GameObject[] animalPrefabs;
@@ -17,14 +16,14 @@ public class FarmSpawner : MonoBehaviour
     [Tooltip("Random radius around each farm to try spawn candidates.")]
     public float spawnRadiusAroundFarm = 3f;
 
-    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate. Keep this small!")]
+    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate.")]
     public float maxSpawnSearchDistance = 0.5f;
 
     [Tooltip("How many random attempts per animal before giving up.")]
     public int attemptsPerAnimal = 10;
 
     [Header("Spawn Timing")]
-    [Tooltip("Delay between each spawned animal.")]
+    [Tooltip("Delay between each spawned animal to prevent lag spikes.")]
     public float delayBetweenSpawns = 0.5f;
 
     [Header("Ground Detection")]
@@ -34,16 +33,44 @@ public class FarmSpawner : MonoBehaviour
     [Tooltip("Only raycast against these layers for ground. Set to your ground layer(s).")]
     public LayerMask groundMask = ~0;
 
+    [Header("Spawn Placement Safety")]
+    [Tooltip("Spawn slightly above the navmesh point to help the agent bind cleanly.")]
+    public float spawnHeightOffset = 0.2f;
+
+    [Tooltip("Extra navmesh snap radius after instantiating.")]
+    public float postSpawnSnapDistance = 2f;
+
     void Start()
     {
+        StartCoroutine(WaitUntilPlaced());
+    }
+
+    IEnumerator WaitUntilPlaced()
+    {
+        bool isPlaced = false;
+        while (!isPlaced)
+        {
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 0.05f, NavMesh.AllAreas))
+            {
+                isPlaced = true;
+            }
+            else
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+
         StartCoroutine(SpawnRoutine());
     }
 
     IEnumerator SpawnRoutine()
     {
-        if (animalPrefabs == null || animalPrefabs.Length == 0) yield break;
+        if (animalPrefabs == null || animalPrefabs.Length == 0)
+        {
+            Debug.LogError("No animalPrefabs assigned.");
+            yield break;
+        }
 
-        // ONLY spawn animals for THIS farm's location
         for (int i = 0; i < animalsPerFarm; i++)
         {
             TrySpawnAnimal(transform.position);
@@ -55,26 +82,26 @@ public class FarmSpawner : MonoBehaviour
 
     void TrySpawnAnimal(Vector3 farmPos)
     {
-        GameObject prefab = animalPrefabs[Random.Range(0, animalPrefabs.Length)];
+        if (farmPos.y < -500f) return;
+
+        GameObject prefab = animalPrefabs[UnityEngine.Random.Range(0, animalPrefabs.Length)];
 
         for (int attempt = 0; attempt < attemptsPerAnimal; attempt++)
         {
-            Vector2 r = Random.insideUnitCircle * spawnRadiusAroundFarm;
+            Vector2 r = UnityEngine.Random.insideUnitCircle * spawnRadiusAroundFarm;
+            Vector3 candidateXZ = new Vector3(farmPos.x + r.x, 0f, farmPos.z + r.y);
 
-            // Search around the farm in XZ only
-            Vector3 candidateXZ = new Vector3(farmPos.x + r.x, farmPos.y, farmPos.z + r.y);
-
-            // Raycast from high above world space
-            Vector3 rayStart = candidateXZ + Vector3.up * raycastHeight;
+            Vector3 rayStart = new Vector3(candidateXZ.x, raycastHeight, candidateXZ.z);
             Vector3 sampleFrom = candidateXZ;
 
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit groundHit, raycastHeight * 2f, groundMask))
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit groundHit, raycastHeight * 4f, groundMask))
             {
                 sampleFrom = groundHit.point;
             }
 
-            // Sample the NavMesh using the small max search distance to prevent edge-snapping
-            if (NavMesh.SamplePosition(sampleFrom, out NavMeshHit hit, maxSpawnSearchDistance, NavMesh.AllAreas))
+            Vector3 probePos = sampleFrom + Vector3.up * 0.5f;
+
+            if (NavMesh.SamplePosition(probePos, out NavMeshHit hit, maxSpawnSearchDistance, NavMesh.AllAreas))
             {
                 Spawn(prefab, hit.position);
                 return;
@@ -84,17 +111,26 @@ public class FarmSpawner : MonoBehaviour
         Debug.LogWarning($"Could not find NavMesh near farm to spawn animal. FarmPos={farmPos}");
     }
 
-    void Spawn(GameObject prefab, Vector3 position)
+    void Spawn(GameObject prefab, Vector3 navMeshPosition)
     {
-        var go = Instantiate(prefab, position, Quaternion.identity);
-
-        if (!string.IsNullOrEmpty(animalTag) && !go.CompareTag(animalTag))
-            go.tag = animalTag;
+        Vector3 spawnPos = navMeshPosition + Vector3.up * spawnHeightOffset;
+        GameObject go = Instantiate(prefab, spawnPos, Quaternion.identity);
 
         NavMeshAgent agent = go.GetComponent<NavMeshAgent>();
         if (agent != null)
         {
-            agent.Warp(position);
+            bool wasEnabled = agent.enabled;
+            agent.enabled = false;
+
+            if (NavMesh.SamplePosition(navMeshPosition, out NavMeshHit hit, postSpawnSnapDistance, NavMesh.AllAreas))
+                go.transform.position = hit.position;
+            else
+                go.transform.position = navMeshPosition;
+
+            agent.enabled = wasEnabled;
+
+            if (agent.enabled)
+                agent.Warp(go.transform.position);
         }
     }
 }

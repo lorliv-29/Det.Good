@@ -298,7 +298,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3647409281128929080}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: baed3e011583e1844a6e85b1cd0657f2, type: 3}
   m_Name: 
@@ -337,7 +337,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3647409281128929080}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b04d39d26e3b7804e9963f738ef7bfe1, type: 3}
   m_Name: 
@@ -513,6 +513,7 @@ GameObject:
   - component: {fileID: 7968780713912420580}
   - component: {fileID: 2903988509638943711}
   - component: {fileID: 2340513189893049830}
+  - component: {fileID: 7709839053901422386}
   m_Layer: 9
   m_Name: Desiduous Forest
   m_TagString: Forest
@@ -530,7 +531,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.06, y: 0.06, z: 0.06}
+  m_LocalScale: {x: 0.04, y: 0.04, z: 0.04}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 8493664456964319012}
@@ -602,6 +603,33 @@ MonoBehaviour:
   sandLayer:
     serializedVersion: 2
     m_Bits: 256
+--- !u!114 &7709839053901422386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6885867691321311260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 977a2745d1810d64292ff12afb454143, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WildlifeSpawner
+  wildlifePrefabs:
+  - {fileID: 1532956251285030513, guid: cf2035f23c7f76c48aa4c475599c5dd5, type: 3}
+  - {fileID: 1532956251285030513, guid: cf2035f23c7f76c48aa4c475599c5dd5, type: 3}
+  - {fileID: 3851015956068934394, guid: dfb23d60f30c46847ba7815aa09e2567, type: 3}
+  wildlifePerForest: 2
+  spawnRadiusAroundForest: 0.01
+  maxSpawnSearchDistance: 1
+  attemptsPerWildlife: 10
+  delayBetweenSpawns: 0.5
+  raycastHeight: 80
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 8
+  spawnHeightOffset: 0.2
+  postSpawnSnapDistance: 0.1
 --- !u!1001 &1636112084413324794
 PrefabInstance:
   m_ObjectHideFlags: 0

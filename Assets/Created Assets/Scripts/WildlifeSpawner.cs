@@ -1,41 +1,51 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class WildlifeSpawner : MonoBehaviour
 {
-    [Header("Tags")]
-    public string wildlifeTag = "Wildlife";
-
     [Header("Wildlife Prefabs")]
-    [Tooltip("Prefabs to spawn. Each prefab should have a NavMeshAgent and (optionally) a Wanderer.")]
     public GameObject[] wildlifePrefabs;
 
     [Header("Spawn Settings")]
-    [Tooltip("How many animals spawn for this forest object.")]
-    public int wildlifePerForest = 4;
-
-    [Tooltip("Random radius around the forest object to try spawn candidates.")]
-    public float spawnRadiusAroundForest = 8f;
-
-    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate. Keep this small!")]
+    public int wildlifePerForest = 2;
+    public float spawnRadiusAroundForest = 3f;
     public float maxSpawnSearchDistance = 0.5f;
-
-    [Tooltip("How many random attempts per animal before giving up.")]
     public int attemptsPerWildlife = 10;
 
     [Header("Spawn Timing")]
-    [Tooltip("Delay between each spawned wildlife animal.")]
     public float delayBetweenSpawns = 0.5f;
 
     [Header("Ground Detection")]
-    [Tooltip("Raycast height above candidate point.")]
     public float raycastHeight = 50f;
-
     public LayerMask groundMask = ~0;
+
+    [Header("Spawn Placement Safety")]
+    public float spawnHeightOffset = 0.2f;
+    public float postSpawnSnapDistance = 2f;
 
     void Start()
     {
+        StartCoroutine(WaitUntilPlaced());
+    }
+
+    IEnumerator WaitUntilPlaced()
+    {
+        bool isPlaced = false;
+        while (!isPlaced)
+        {
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 0.05f, NavMesh.AllAreas))
+            {
+                isPlaced = true;
+            }
+            else
+            {
+                yield return new WaitForSeconds(0.5f);
+            }
+        }
+
         StartCoroutine(SpawnRoutine());
     }
 
@@ -43,59 +53,62 @@ public class WildlifeSpawner : MonoBehaviour
     {
         if (wildlifePrefabs == null || wildlifePrefabs.Length == 0) yield break;
 
-        // ONLY spawn wildlife for THIS forest's location
         for (int i = 0; i < wildlifePerForest; i++)
         {
             TrySpawnWildlife(transform.position);
-
-            if (delayBetweenSpawns > 0f)
-                yield return new WaitForSeconds(delayBetweenSpawns);
+            if (delayBetweenSpawns > 0f) yield return new WaitForSeconds(delayBetweenSpawns);
         }
     }
 
     void TrySpawnWildlife(Vector3 forestPos)
     {
-        GameObject prefab = wildlifePrefabs[Random.Range(0, wildlifePrefabs.Length)];
+        if (forestPos.y < -500f) return;
+
+        GameObject prefab = wildlifePrefabs[UnityEngine.Random.Range(0, wildlifePrefabs.Length)];
 
         for (int attempt = 0; attempt < attemptsPerWildlife; attempt++)
         {
-            Vector2 r = Random.insideUnitCircle * spawnRadiusAroundForest;
+            Vector2 r = UnityEngine.Random.insideUnitCircle * spawnRadiusAroundForest;
+            Vector3 candidateXZ = new Vector3(forestPos.x + r.x, 0f, forestPos.z + r.y);
 
-            // Search around the forest in XZ only
-            Vector3 candidateXZ = new Vector3(forestPos.x + r.x, forestPos.y, forestPos.z + r.y);
-
-            // Raycast from high above world space
-            Vector3 rayStart = candidateXZ + Vector3.up * raycastHeight;
+            Vector3 rayStart = new Vector3(candidateXZ.x, raycastHeight, candidateXZ.z);
             Vector3 sampleFrom = candidateXZ;
 
-            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit groundHit, raycastHeight * 2f, groundMask))
+            if (Physics.Raycast(rayStart, Vector3.down, out RaycastHit groundHit, raycastHeight * 4f, groundMask))
             {
                 sampleFrom = groundHit.point;
             }
 
-            if (NavMesh.SamplePosition(sampleFrom, out NavMeshHit hit, maxSpawnSearchDistance, NavMesh.AllAreas))
+            Vector3 probePos = sampleFrom + Vector3.up * 0.5f;
+
+            if (NavMesh.SamplePosition(probePos, out NavMeshHit hit, maxSpawnSearchDistance, NavMesh.AllAreas))
             {
                 Spawn(prefab, hit.position);
                 return;
             }
         }
-
         Debug.LogWarning($"Could not find NavMesh near forest to spawn wildlife. ForestPos={forestPos}");
     }
 
-    void Spawn(GameObject prefab, Vector3 position)
+    void Spawn(GameObject prefab, Vector3 navMeshPosition)
     {
-        var go = Instantiate(prefab, position, Quaternion.identity);
-
-        if (!string.IsNullOrEmpty(wildlifeTag) && !go.CompareTag(wildlifeTag))
-        {
-            go.tag = wildlifeTag;
-        }
+        Vector3 spawnPos = navMeshPosition + Vector3.up * spawnHeightOffset;
+        GameObject go = Instantiate(prefab, spawnPos, Quaternion.identity);
 
         NavMeshAgent agent = go.GetComponent<NavMeshAgent>();
         if (agent != null)
         {
-            agent.Warp(position);
+            bool wasEnabled = agent.enabled;
+            agent.enabled = false;
+
+            if (NavMesh.SamplePosition(navMeshPosition, out NavMeshHit hit, postSpawnSnapDistance, NavMesh.AllAreas))
+                go.transform.position = hit.position;
+            else
+                go.transform.position = navMeshPosition;
+
+            agent.enabled = wasEnabled;
+
+            if (agent.enabled) agent.Warp(go.transform.position);
         }
     }
 }

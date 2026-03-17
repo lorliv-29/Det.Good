@@ -77,6 +77,8 @@ public class GodboxUIFlowController : MonoBehaviour
     public float textMoveDistance = 2f;
     public float textMoveDuration = 2.5f;
 
+
+
     [Header("Debug")]
     public bool enableDebugLogs = true;
 
