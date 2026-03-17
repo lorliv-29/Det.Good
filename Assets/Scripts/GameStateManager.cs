@@ -6,8 +6,15 @@ using Oculus.Interaction;
 
 public class GameStateManager : MonoBehaviour
 {
-    public enum GamePhase { Build, Live }
-    public GamePhase currentPhase = GamePhase.Build;
+    public enum GamePhase
+    {
+        Intro,
+        Phase1_Shape,
+        Phase2_Create,
+        Phase3_Observe
+    }
+
+    public GamePhase currentPhase = GamePhase.Intro;
 
     [Header("Dependencies")]
     public SandTopographyManager topographyManager;
@@ -15,7 +22,7 @@ public class GameStateManager : MonoBehaviour
     public NavMeshSurface navMeshSurface;
     public GameObject EcosystemManager;
 
-    [Header("Phase 2 Config")]
+    [Header("Spectator / Phase 3")]
     public Transform ovrCameraRig;
     public Transform landingPoint;
     public TunnelingEffect tunnelingEffect;
@@ -25,32 +32,73 @@ public class GameStateManager : MonoBehaviour
     private Vector3 godViewPosition;
     private Quaternion godViewRotation;
     private Transform godViewParent;
-    private bool isDiving = false;
+    private bool isTransitioning = false;
 
     void Update()
     {
+        // DEV SHORTCUTS ONLY
         if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
         {
-            if (currentPhase == GamePhase.Build)
-            {
-                ActivateEcosystem();
-            }
+            EnterPhase2();
         }
 
-        if (Keyboard.current.kKey.wasPressedThisFrame && !isDiving)
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            StartCoroutine(SmoothDiveTransition());
+            // Dev only: go back to phase 1 if needed
+            ReturnToPhase1Dev();
         }
 
-        if (Keyboard.current.jKey.wasPressedThisFrame)
+        if (Keyboard.current != null && Keyboard.current.jKey.wasPressedThisFrame)
         {
-            ExitDiveMode();
+            EnterPhase3();
         }
+    }
+
+    public void EnterPhase1()
+    {
+        currentPhase = GamePhase.Phase1_Shape;
+    }
+
+    public void EnterPhase2()
+    {
+        if (currentPhase == GamePhase.Phase2_Create || currentPhase == GamePhase.Phase3_Observe)
+            return;
+
+        SnapBuildingsToSand();
+
+        if (navMeshSurface != null)
+        {
+            navMeshSurface.BuildNavMesh();
+        }
+
+        if (EcosystemManager != null)
+        {
+            MonoBehaviour[] allSpawners = EcosystemManager.GetComponents<MonoBehaviour>();
+            foreach (var s in allSpawners) s.enabled = true;
+        }
+
+        currentPhase = GamePhase.Phase2_Create;
+    }
+
+    public void EnterPhase3()
+    {
+        if (currentPhase != GamePhase.Phase2_Create || isTransitioning)
+            return;
+
+        currentPhase = GamePhase.Phase3_Observe;
+        StartCoroutine(SmoothDiveTransition());
+    }
+
+    public void ReturnToPhase1Dev()
+    {
+        // DEV ONLY
+        currentPhase = GamePhase.Phase1_Shape;
+        ExitDiveMode();
     }
 
     private IEnumerator SmoothDiveTransition()
     {
-        isDiving = true;
+        isTransitioning = true;
 
         godViewPosition = ovrCameraRig.position;
         godViewRotation = ovrCameraRig.rotation;
@@ -62,7 +110,7 @@ public class GameStateManager : MonoBehaviour
             tunnelingEffect.UserFOV = 360f;
         }
 
-        float elapsed = 0;
+        float elapsed = 0f;
         while (elapsed < transitionTime)
         {
             elapsed += Time.deltaTime;
@@ -83,14 +131,16 @@ public class GameStateManager : MonoBehaviour
         ovrCameraRig.localPosition = landingPoint.localPosition + new Vector3(0, 0.032f, 0);
         ovrCameraRig.localRotation = landingPoint.localRotation;
 
-        elapsed = 0;
+        elapsed = 0f;
         while (elapsed < 0.5f)
         {
             elapsed += Time.deltaTime;
+
             if (tunnelingEffect != null)
             {
                 tunnelingEffect.UserFOV = Mathf.Lerp(40f, 360f, elapsed / 0.5f);
             }
+
             yield return null;
         }
 
@@ -99,10 +149,10 @@ public class GameStateManager : MonoBehaviour
             tunnelingEffect.enabled = false;
         }
 
-        isDiving = false;
+        isTransitioning = false;
     }
 
-    private void ExitDiveMode()
+    public void ExitDiveMode()
     {
         ovrCameraRig.SetParent(godViewParent);
         ovrCameraRig.localScale = Vector3.one;
@@ -116,27 +166,12 @@ public class GameStateManager : MonoBehaviour
         }
     }
 
-    private void ActivateEcosystem()
-    {
-        SnapBuildingsToSand();
-
-        if (navMeshSurface != null)
-        {
-            navMeshSurface.BuildNavMesh();
-        }
-
-        if (EcosystemManager != null)
-        {
-            MonoBehaviour[] allSpawners = EcosystemManager.GetComponents<MonoBehaviour>();
-            foreach (var s in allSpawners) s.enabled = true;
-        }
-
-        currentPhase = GamePhase.Live;
-    }
-
     private void SnapBuildingsToSand()
     {
         SnapToSand[] allBuildings = Object.FindObjectsByType<SnapToSand>(FindObjectsSortMode.None);
-        foreach (var b in allBuildings) b.SnapToCurrentMesh();
+        foreach (var b in allBuildings)
+        {
+            b.SnapToCurrentMesh();
+        }
     }
 }
