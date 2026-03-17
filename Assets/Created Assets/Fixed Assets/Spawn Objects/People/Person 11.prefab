@@ -64,13 +64,53 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -7670638196022979519, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -7134394785105016132, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -5151492872390713093, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -5069531478518834764, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
       propertyPath: m_Name
       value: Person 11
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
       propertyPath: m_TagString
       value: People
+      objectReference: {fileID: 0}
+    - target: {fileID: 3250163066507786643, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 4361710834771507933, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 5788240856288092216, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8303906797054990637, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8908311948669537042, guid: f3cf106046e20f34a8978d1c8cd4df52, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

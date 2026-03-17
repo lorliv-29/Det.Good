@@ -13,6 +13,10 @@ PrefabInstance:
       value: Mesh_Bee Variant
       objectReference: {fileID: 0}
     - target: {fileID: 107479573791814672, guid: 80a5bf2f24535f8419899bdb04b94195, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 107479573791814672, guid: 80a5bf2f24535f8419899bdb04b94195, type: 3}
       propertyPath: m_TagString
       value: Insect
       objectReference: {fileID: 0}
@@ -71,6 +75,10 @@ PrefabInstance:
     - target: {fileID: 735785170166673066, guid: 80a5bf2f24535f8419899bdb04b94195, type: 3}
       propertyPath: m_ConstrainProportionsScale
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6813044235025574078, guid: 80a5bf2f24535f8419899bdb04b94195, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

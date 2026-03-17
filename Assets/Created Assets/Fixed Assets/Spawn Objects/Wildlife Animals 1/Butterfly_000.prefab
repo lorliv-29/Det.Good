@@ -68,13 +68,57 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -7277717356915998559, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -4267082500566254483, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -2774211288909401694, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: -249304386368601931, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
       propertyPath: m_Name
       value: Butterfly_000
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
       propertyPath: m_TagString
       value: Insect
+      objectReference: {fileID: 0}
+    - target: {fileID: 948512870540983677, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3883787791502840372, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 5021678316886915818, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 6900518094527171529, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8331974935814521192, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 8913296852811253717, guid: ee07cf8e09b63854eb1232a346ad2dae, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3776729903160958954}
   - component: {fileID: 7082489883813819241}
   - component: {fileID: 3101676038199929128}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Plane
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -125,7 +125,7 @@ GameObject:
   - component: {fileID: 4823265457725843720}
   - component: {fileID: 5252372853734047451}
   - component: {fileID: 4205562915713017481}
-  m_Layer: 9
+  m_Layer: 7
   m_Name: Rowboat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -230,7 +230,7 @@ GameObject:
   - component: {fileID: 7287006761931457597}
   - component: {fileID: 244406279210205982}
   - component: {fileID: 3297739130171277165}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Interactables
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -496,7 +496,7 @@ GameObject:
   - component: {fileID: 2498235073656175146}
   - component: {fileID: 3392626774171459851}
   - component: {fileID: 9165253670474158977}
-  m_Layer: 4
+  m_Layer: 7
   m_Name: Audio
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -656,7 +656,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1726668465247849014, guid: 1a09422e2d7b4fb48a5986c6eb57a629, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 7781047562868582520, guid: 1a09422e2d7b4fb48a5986c6eb57a629, type: 3}
       propertyPath: m_Name
@@ -664,11 +664,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7781047562868582520, guid: 1a09422e2d7b4fb48a5986c6eb57a629, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 8681981952099309537, guid: 1a09422e2d7b4fb48a5986c6eb57a629, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -738,7 +738,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4674537905600659506, guid: 721e429017725a24fa6362e8d93267a2, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -819,7 +819,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4674537905600659506, guid: 587a377cccd931246a8bc5bf692429c6, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -900,7 +900,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4674537905600659506, guid: bdb40a95c243fcc429e6ff8bfeddcfb8, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -975,6 +975,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rowboat
       objectReference: {fileID: 0}
+    - target: {fileID: 733174427844714632, guid: ea6c510ada1ca504c80d21220e9cb276, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 9056789065596703320, guid: ea6c510ada1ca504c80d21220e9cb276, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1048,7 +1056,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4674537905600659506, guid: a067db1b6411ce944a12ad8815474543, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1118,7 +1126,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4674537905600659506, guid: 36f9e4d94e3541446b28a1ffc63010c7, type: 3}
       propertyPath: m_Layer
-      value: 4
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
