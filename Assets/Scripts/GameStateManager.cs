@@ -30,6 +30,9 @@ public class GameStateManager : MonoBehaviour
     public float transitionTime = 1.5f;
     public float miniScale = 0.005f;
 
+    [Header("Phase 3 Crowd")]
+    public float phase3ApproachDelay = 20f;
+
     private Vector3 godViewPosition;
     private Quaternion godViewRotation;
     private Transform godViewParent;
@@ -153,9 +156,32 @@ public class GameStateManager : MonoBehaviour
             tunnelingEffect.enabled = false;
         }
 
-        TriggerPeopleApproach();
+        DisablePeopleInteractionsForPhase3();
+        StartCoroutine(BeginPeopleApproachAfterDelay());
 
         isTransitioning = false;
+    }
+
+    IEnumerator BeginPeopleApproachAfterDelay()
+    {
+        yield return new WaitForSeconds(phase3ApproachDelay);
+        TriggerPeopleApproach();
+    }
+
+    void DisablePeopleInteractionsForPhase3()
+    {
+        GameObject[] people = GameObject.FindGameObjectsWithTag("People");
+
+        foreach (GameObject person in people)
+        {
+            if (person == null) continue;
+
+            PersonInteraction interaction = person.GetComponent<PersonInteraction>();
+            if (interaction != null)
+            {
+                interaction.DisableInteractionsForPhase3();
+            }
+        }
     }
 
     public void TriggerPeopleApproach()

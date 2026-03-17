@@ -64,6 +64,11 @@ public class PersonInteraction : MonoBehaviour
     bool isOnCooldown;
     float nextCheckTime;
 
+    bool interactionsDisabledForPhase3;
+    Coroutine activeInteractionCoroutine;
+    Coroutine activeCooldownCoroutine;
+    GameObject activeEffectInstance;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -75,12 +80,41 @@ public class PersonInteraction : MonoBehaviour
 
     void Update()
     {
+        if (interactionsDisabledForPhase3) return;
         if (isInteracting || isOnCooldown) return;
         if (Time.time < nextCheckTime) return;
         if (agent == null || !agent.isOnNavMesh) return;
 
         nextCheckTime = Time.time + checkInterval;
         TryFindInteractionPartner();
+    }
+
+    public void DisableInteractionsForPhase3()
+    {
+        interactionsDisabledForPhase3 = true;
+        isOnCooldown = false;
+        nextCheckTime = float.PositiveInfinity;
+
+        if (activeCooldownCoroutine != null)
+        {
+            StopCoroutine(activeCooldownCoroutine);
+            activeCooldownCoroutine = null;
+        }
+
+        if (activeInteractionCoroutine != null)
+        {
+            StopCoroutine(activeInteractionCoroutine);
+            activeInteractionCoroutine = null;
+        }
+
+        if (activeEffectInstance != null)
+        {
+            Destroy(activeEffectInstance);
+            activeEffectInstance = null;
+        }
+
+        isInteracting = false;
+        SetVisible(true);
     }
 
     void TryFindInteractionPartner()
@@ -100,6 +134,7 @@ public class PersonInteraction : MonoBehaviour
             if (other == null) continue;
             if (other == this) continue;
             if (other.isInteracting || other.isOnCooldown) continue;
+            if (other.interactionsDisabledForPhase3) continue;
 
             float dSqr = (other.transform.position - transform.position).sqrMagnitude;
             if (dSqr < bestDistSqr)
@@ -120,7 +155,7 @@ public class PersonInteraction : MonoBehaviour
                     ? InteractionType.Love
                     : InteractionType.Fight;
 
-                StartCoroutine(HandleInteraction(bestCandidate, type));
+                activeInteractionCoroutine = StartCoroutine(HandleInteraction(bestCandidate, type));
             }
         }
     }
@@ -128,6 +163,7 @@ public class PersonInteraction : MonoBehaviour
     IEnumerator HandleInteraction(PersonInteraction other, InteractionType type)
     {
         if (other == null) yield break;
+        if (interactionsDisabledForPhase3 || other.interactionsDisabledForPhase3) yield break;
         if (isInteracting || other.isInteracting) yield break;
 
         isInteracting = true;
@@ -143,15 +179,17 @@ public class PersonInteraction : MonoBehaviour
         other.SetVisible(false);
 
         GameObject effectPrefab = GetEffectPrefab(type);
-        GameObject spawnedEffect = null;
+        activeEffectInstance = null;
 
         if (effectPrefab != null)
-            spawnedEffect = Instantiate(effectPrefab, effectPos, Quaternion.identity);
+            activeEffectInstance = Instantiate(effectPrefab, effectPos, Quaternion.identity);
 
         yield return new WaitForSeconds(interactionDuration);
 
-        if (spawnedEffect != null)
-            Destroy(spawnedEffect);
+        if (activeEffectInstance != null)
+            Destroy(activeEffectInstance);
+
+        activeEffectInstance = null;
 
         SetVisible(true);
         other.SetVisible(true);
@@ -159,11 +197,12 @@ public class PersonInteraction : MonoBehaviour
         ResumeMovement(this);
         ResumeMovement(other);
 
-        StartCoroutine(StartCooldown());
-        StartCoroutine(other.StartCooldown());
+        activeCooldownCoroutine = StartCoroutine(StartCooldown());
+        other.activeCooldownCoroutine = other.StartCoroutine(other.StartCooldown());
 
         isInteracting = false;
         other.isInteracting = false;
+        activeInteractionCoroutine = null;
     }
 
     IEnumerator StartCooldown()
@@ -171,6 +210,7 @@ public class PersonInteraction : MonoBehaviour
         isOnCooldown = true;
         yield return new WaitForSeconds(cooldownDuration);
         isOnCooldown = false;
+        activeCooldownCoroutine = null;
     }
 
     GameObject GetEffectPrefab(InteractionType type)
@@ -208,6 +248,9 @@ public class PersonInteraction : MonoBehaviour
     void ResumeMovement(PersonInteraction person)
     {
         if (person == null) return;
+
+        if (person.interactionsDisabledForPhase3)
+            return;
 
         if (person.wanderer != null)
             person.wanderer.ResumeWandering();

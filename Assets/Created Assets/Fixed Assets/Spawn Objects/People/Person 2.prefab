@@ -131,9 +131,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f68bfdc591fb6d6498f9e7f7d7fbaed5, type: 3}
       insertIndex: -1
       addedObject: {fileID: -1392492008648145803}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f68bfdc591fb6d6498f9e7f7d7fbaed5, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: -8271581505484656149}
   m_SourcePrefab: {fileID: 100100000, guid: f68bfdc591fb6d6498f9e7f7d7fbaed5, type: 3}
 --- !u!1 &8515621586037903720 stripped
 GameObject:
@@ -188,6 +185,8 @@ MonoBehaviour:
   agentSpeed: 0.1
   agentAcceleration: 2
   agentAngularSpeed: 180
+  targetRefreshInterval: 0.35
+  approachStoppingDistance: 0.35
 --- !u!136 &-8004271456117523240
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -258,20 +257,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &-8271581505484656149
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8515621586037903720}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13f9c07b1770893429924d3d519b01ab, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PeopleApproachController
-  approachSpeed: 0.5
-  approachAcceleration: 1.5
-  approachAngularSpeed: 120
-  stoppingDistance: 1.25
-  repathInterval: 0.5
