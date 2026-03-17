@@ -31,7 +31,10 @@ public class GameStateManager : MonoBehaviour
     public float miniScale = 0.005f;
 
     [Header("Phase 3 Crowd")]
-    public float phase3ApproachDelay = 20f;
+    public Transform phase3ApproachTarget;
+    public float phase3WanderBeforeFacing = 6f;
+    public float phase3FaceStagger = 0.35f;
+    public float phase3ApproachDelayAfterFacing = 6f;
 
     private Vector3 godViewPosition;
     private Quaternion godViewRotation;
@@ -157,14 +160,38 @@ public class GameStateManager : MonoBehaviour
         }
 
         DisablePeopleInteractionsForPhase3();
-        StartCoroutine(BeginPeopleApproachAfterDelay());
+        StartCoroutine(Phase3CrowdSequence());
 
         isTransitioning = false;
     }
 
-    IEnumerator BeginPeopleApproachAfterDelay()
+    IEnumerator Phase3CrowdSequence()
     {
-        yield return new WaitForSeconds(phase3ApproachDelay);
+        if (phase3ApproachTarget == null)
+        {
+            Debug.LogWarning("Phase 3 Approach Target is not assigned.");
+            yield break;
+        }
+
+        yield return new WaitForSeconds(phase3WanderBeforeFacing);
+
+        GameObject[] people = GameObject.FindGameObjectsWithTag("People");
+
+        foreach (GameObject person in people)
+        {
+            if (person == null) continue;
+
+            Wanderer wanderer = person.GetComponent<Wanderer>();
+            if (wanderer != null)
+            {
+                wanderer.FreezeAndFaceTarget(phase3ApproachTarget);
+            }
+
+            yield return new WaitForSeconds(phase3FaceStagger);
+        }
+
+        yield return new WaitForSeconds(phase3ApproachDelayAfterFacing);
+
         TriggerPeopleApproach();
     }
 
@@ -186,8 +213,11 @@ public class GameStateManager : MonoBehaviour
 
     public void TriggerPeopleApproach()
     {
-        if (ovrCameraRig == null)
+        if (phase3ApproachTarget == null)
+        {
+            Debug.LogWarning("Phase 3 Approach Target is missing.");
             return;
+        }
 
         GameObject[] people = GameObject.FindGameObjectsWithTag("People");
 
@@ -198,7 +228,7 @@ public class GameStateManager : MonoBehaviour
             Wanderer wanderer = person.GetComponent<Wanderer>();
             if (wanderer != null)
             {
-                wanderer.StartApproachingTarget(ovrCameraRig);
+                wanderer.StartApproachingTarget(phase3ApproachTarget);
             }
         }
     }

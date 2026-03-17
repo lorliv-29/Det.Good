@@ -59,6 +59,10 @@ public class Wanderer : MonoBehaviour
     [Tooltip("How close they should get to the player.")]
     public float approachStoppingDistance = 0.35f;
 
+    [Header("Face Target")]
+    [Tooltip("How quickly they rotate to face the target while frozen.")]
+    public float faceTurnSpeed = 240f;
+
     NavMeshAgent agent;
     float nextMoveTime;
 
@@ -69,6 +73,7 @@ public class Wanderer : MonoBehaviour
     bool isPaused;
 
     bool isApproachingTarget;
+    bool isFrozenFacingTarget;
     Transform currentTarget;
     float nextTargetRefreshTime;
 
@@ -106,10 +111,16 @@ public class Wanderer : MonoBehaviour
 
     void Update()
     {
-        if (isPaused)
+        if (!homeSet || agent == null || !agent.isOnNavMesh)
             return;
 
-        if (!homeSet || agent == null || !agent.isOnNavMesh)
+        if (isFrozenFacingTarget)
+        {
+            FaceTargetOnly();
+            return;
+        }
+
+        if (isPaused)
             return;
 
         if (isApproachingTarget)
@@ -127,6 +138,25 @@ public class Wanderer : MonoBehaviour
             TrySetNextMeanderDestination();
             ScheduleNextMove(Random.Range(minWait, maxWait));
         }
+    }
+
+    void FaceTargetOnly()
+    {
+        if (currentTarget == null)
+            return;
+
+        Vector3 toTarget = currentTarget.position - transform.position;
+        toTarget.y = 0f;
+
+        if (toTarget.sqrMagnitude < 0.0001f)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
+        transform.rotation = Quaternion.RotateTowards(
+            transform.rotation,
+            targetRotation,
+            faceTurnSpeed * Time.deltaTime
+        );
     }
 
     void UpdateApproachTarget()
@@ -161,6 +191,9 @@ public class Wanderer : MonoBehaviour
     public void PauseWandering()
     {
         isPaused = true;
+        isApproachingTarget = false;
+        isFrozenFacingTarget = false;
+        currentTarget = null;
 
         if (agent != null)
         {
@@ -173,6 +206,7 @@ public class Wanderer : MonoBehaviour
     {
         isPaused = false;
         isApproachingTarget = false;
+        isFrozenFacingTarget = false;
         currentTarget = null;
 
         if (agent != null && agent.isOnNavMesh)
@@ -183,12 +217,27 @@ public class Wanderer : MonoBehaviour
         }
     }
 
+    public void FreezeAndFaceTarget(Transform target)
+    {
+        if (agent == null || !agent.isOnNavMesh || target == null)
+            return;
+
+        isPaused = false;
+        isApproachingTarget = false;
+        isFrozenFacingTarget = true;
+        currentTarget = target;
+
+        agent.isStopped = true;
+        agent.ResetPath();
+    }
+
     public void StartApproachingTarget(Transform target)
     {
         if (agent == null || !agent.isOnNavMesh || target == null)
             return;
 
         isPaused = false;
+        isFrozenFacingTarget = false;
         isApproachingTarget = true;
         currentTarget = target;
         nextTargetRefreshTime = 0f;
@@ -203,6 +252,7 @@ public class Wanderer : MonoBehaviour
     public void StopApproachingTarget()
     {
         isApproachingTarget = false;
+        isFrozenFacingTarget = false;
         currentTarget = null;
 
         if (agent != null && agent.isOnNavMesh)
@@ -360,6 +410,7 @@ public class Wanderer : MonoBehaviour
 
         targetRefreshInterval = Mathf.Max(0.05f, targetRefreshInterval);
         approachStoppingDistance = Mathf.Max(0.01f, approachStoppingDistance);
+        faceTurnSpeed = Mathf.Max(1f, faceTurnSpeed);
 
         if (agent != null)
         {

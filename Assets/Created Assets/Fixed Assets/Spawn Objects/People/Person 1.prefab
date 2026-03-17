@@ -187,6 +187,7 @@ MonoBehaviour:
   agentAngularSpeed: 180
   targetRefreshInterval: 0.35
   approachStoppingDistance: 0.35
+  faceTurnSpeed: 30
 --- !u!136 &-3073631806271802612
 CapsuleCollider:
   m_ObjectHideFlags: 0
