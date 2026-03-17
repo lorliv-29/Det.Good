@@ -3,23 +3,21 @@ using UnityEngine;
 
 public class InsectSpawner : MonoBehaviour
 {
-    [Header("Spawn Sources")]
+    [Header("Tags")]
     public string flowerTag = "Flowers";
+    public string insectTag = "Insect";
 
     [Header("Insect Prefabs")]
     public GameObject[] insectPrefabs;
 
     [Header("Spawn Control")]
-    [Tooltip("Chance a flower will spawn insects at all (0..1). Example 0.25 = 25% of flowers).")]
+    [Tooltip("Chance this flower will spawn insects at all (0..1). Example 0.25 = 25% chance).")]
     [Range(0f, 1f)]
-    public float spawnChancePerFlower = 0.25f;
-
-    [Tooltip("Hard cap on total insects spawned in the scene. 0 = no cap.")]
-    public int maxTotalInsects = 0;
+    public float spawnChanceForThisFlower = 1.0f; // Defaulted to 1 so you always get bugs for the demo!
 
     [Header("Spawn Settings")]
-    [Tooltip("How many insects spawn for a chosen flower.")]
-    public int insectsPerChosenFlower = 1;
+    [Tooltip("How many insects spawn for this flower.")]
+    public int insectsPerFlower = 1;
 
     public float spawnRadiusAroundFlower = 2f;
 
@@ -27,68 +25,29 @@ public class InsectSpawner : MonoBehaviour
     [Tooltip("Delay between each spawned insect.")]
     public float delayBetweenSpawns = 0.25f;
 
-    [Tooltip("Optional extra delay after each flower is processed.")]
-    public float delayBetweenFlowers = 0.05f;
-
     [Header("Butterfly Behaviour")]
     public float hoverHeight = 5f;
     public float scaleMultiplier = 10f;
 
-    [Header("Optional Tagging")]
-    public string insectTag = "Insect";
-
-    int spawnedCount = 0;
-
     void Start()
     {
-        StartCoroutine(SpawnInsectsRoutine());
+        StartCoroutine(SpawnRoutine());
     }
 
-    IEnumerator SpawnInsectsRoutine()
+    IEnumerator SpawnRoutine()
     {
-        var flowers = GameObject.FindGameObjectsWithTag(flowerTag);
+        if (insectPrefabs == null || insectPrefabs.Length == 0) yield break;
 
-        if (flowers == null || flowers.Length == 0)
+        // Roll the dice to see if this specific flower gets insects
+        if (Random.value > spawnChanceForThisFlower) yield break;
+
+        // ONLY spawn insects for THIS flower's location
+        for (int i = 0; i < insectsPerFlower; i++)
         {
-            Debug.LogError($"No objects found with tag '{flowerTag}'.");
-            yield break;
-        }
+            SpawnInsectForFlower(transform);
 
-        if (insectPrefabs == null || insectPrefabs.Length == 0)
-        {
-            Debug.LogError("No insectPrefabs assigned.");
-            yield break;
-        }
-
-        foreach (var flower in flowers)
-        {
-            if (maxTotalInsects > 0 && spawnedCount >= maxTotalInsects)
-                yield break;
-
-            if (Random.value > spawnChancePerFlower)
-            {
-                if (delayBetweenFlowers > 0f)
-                    yield return new WaitForSeconds(delayBetweenFlowers);
-
-                continue;
-            }
-
-            int count = Mathf.Max(0, insectsPerChosenFlower);
-
-            for (int i = 0; i < count; i++)
-            {
-                if (maxTotalInsects > 0 && spawnedCount >= maxTotalInsects)
-                    yield break;
-
-                SpawnInsectForFlower(flower.transform);
-                spawnedCount++;
-
-                if (delayBetweenSpawns > 0f)
-                    yield return new WaitForSeconds(delayBetweenSpawns);
-            }
-
-            if (delayBetweenFlowers > 0f)
-                yield return new WaitForSeconds(delayBetweenFlowers);
+            if (delayBetweenSpawns > 0f)
+                yield return new WaitForSeconds(delayBetweenSpawns);
         }
     }
 
@@ -110,16 +69,13 @@ public class InsectSpawner : MonoBehaviour
         if (!string.IsNullOrEmpty(insectTag) && !go.CompareTag(insectTag))
             go.tag = insectTag;
 
+        // If you are using your custom ButterflyHover script, configure it here!
         var hover = go.GetComponent<ButterflyHoverWander>();
         if (hover != null)
         {
             hover.orbitCenter = flower;
             hover.baseHeight = hoverHeight;
             hover.flowerTag = flowerTag;
-        }
-        else
-        {
-            Debug.LogWarning($"{go.name} spawned but has no ButterflyHoverWander component.");
         }
     }
 }

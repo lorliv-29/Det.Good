@@ -1,6 +1,9 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Unity.AI.Navigation;
+using UnityEngine.InputSystem; // Added so we can use the T key!
 
 public class SandMeshBuilder : MonoBehaviour
 {
@@ -12,24 +15,31 @@ public class SandMeshBuilder : MonoBehaviour
     [Range(0f, 1f)]
     public float navMeshHeightScale = 1.0f;
 
+    [Header("Automated AI Baking")]
+    public NavMeshSurface navMeshSurface;
+
     [Header("Assign in Inspector")]
     public MeshFilter meshFilter;
     public MeshCollider meshCollider;
     public Transform referenceTransform;
 
     [Header("Grid Dimensions")]
-    [Tooltip("Camera width divided by decimation filter magnitude")]
     public int gridWidth = 160;
-
-    [Tooltip("Camera height divided by decimation filter magnitude")]
     public int gridHeight = 120;
 
     [Header("Mesh Cleanup")]
-    [Tooltip("Anything below this is considered invalid/hidden terrain.")]
     public float invalidYThreshold = -500f;
-
-    [Tooltip("Only stitch points together if edges are shorter than this.")]
     public float maxEdge = 0.1f;
+
+    void Update()
+    {
+        // THE MANUAL OVERRIDE: Press T to force a bake anytime!
+        if (Keyboard.current != null && Keyboard.current.tKey.wasPressedThisFrame)
+        {
+            Debug.Log("Manual Override: T key pressed. Forcing NavMesh Bake!");
+            ForceBakeNavMesh();
+        }
+    }
 
     public void GeneratePhysicalMesh(ComputeBuffer pointBuffer)
     {
@@ -46,7 +56,6 @@ public class SandMeshBuilder : MonoBehaviour
 
             List<int> triangles = new List<int>();
 
-            // Build triangles only from valid points
             for (int y = 0; y < gridHeight - 1; y++)
             {
                 for (int x = 0; x < gridWidth - 1; x++)
@@ -56,7 +65,6 @@ public class SandMeshBuilder : MonoBehaviour
                     int iTop = i + gridWidth;
                     int iTopRight = i + gridWidth + 1;
 
-                    // Skip any quad touching invalid underground points
                     if (worldVertices[i].y < invalidYThreshold ||
                         worldVertices[iRight].y < invalidYThreshold ||
                         worldVertices[iTop].y < invalidYThreshold ||
@@ -65,7 +73,6 @@ public class SandMeshBuilder : MonoBehaviour
                         continue;
                     }
 
-                    // Triangle 1
                     if (Vector3.Distance(worldVertices[i], worldVertices[iRight]) < maxEdge &&
                         Vector3.Distance(worldVertices[i], worldVertices[iTop]) < maxEdge)
                     {
@@ -74,7 +81,6 @@ public class SandMeshBuilder : MonoBehaviour
                         triangles.Add(iRight);
                     }
 
-                    // Triangle 2
                     if (Vector3.Distance(worldVertices[iRight], worldVertices[iTop]) < maxEdge &&
                         Vector3.Distance(worldVertices[iTop], worldVertices[iTopRight]) < maxEdge)
                     {
@@ -85,10 +91,7 @@ public class SandMeshBuilder : MonoBehaviour
                 }
             }
 
-            // Convert into local space of the chosen reference
             Transform t = referenceTransform != null ? referenceTransform : transform;
-
-            // Compact the mesh so only used vertices survive
             Dictionary<int, int> oldToNew = new Dictionary<int, int>();
             List<Vector3> compactVertices = new List<Vector3>();
             List<int> compactTriangles = new List<int>();
@@ -124,15 +127,8 @@ public class SandMeshBuilder : MonoBehaviour
                 meshCollider.sharedMesh = null;
                 meshCollider.sharedMesh = solidMesh;
             }
-           
-            Debug.Log($"Physical Sand Mesh Generated Successfully! Vertices={compactVertices.Count}, Triangles={compactTriangles.Count / 3}");
 
-            Debug.Log("Attempting to build NavMesh Proxy...");
-            Debug.Log("buildNavMeshProxy = " + buildNavMeshProxy);
-            Debug.Log("navMeshProxyFilter assigned = " + (navMeshProxyFilter != null));
-            Debug.Log("navMeshProxyCollider assigned = " + (navMeshProxyCollider != null));
-            Debug.Log("worldVertices count = " + worldVertices.Length);
-            Debug.Log("triangle count = " + triangles.Count);
+            Debug.Log($"Physical Sand Mesh Generated Successfully! Vertices={compactVertices.Count}");
 
             if (buildNavMeshProxy && navMeshProxyFilter != null && navMeshProxyCollider != null)
             {
@@ -144,24 +140,26 @@ public class SandMeshBuilder : MonoBehaviour
                     navMeshProxyFilter.transform
                 );
 
-                navMeshProxyFilter.mesh = proxyMesh; // use .mesh for runtime
+                navMeshProxyFilter.mesh = proxyMesh;
                 navMeshProxyCollider.sharedMesh = null;
                 navMeshProxyCollider.sharedMesh = proxyMesh;
 
                 Debug.Log("Proxy mesh successfully assigned!");
+
+                if (navMeshSurface != null)
+                {
+                    // Triggers the 1-second reliable delay
+                    StartCoroutine(WaitAndBakeNavMesh(1.0f));
+                }
             }
             else
             {
                 Debug.LogWarning("NavMesh proxy NOT built. Something is missing.");
             }
-
         });
     }
 
-    private Mesh BuildNavMeshProxyMeshFromWorld(
-    Vector3[] sourceWorldVertices,
-    List<int> sourceTriangles,
-    Transform proxyTransform)
+    private Mesh BuildNavMeshProxyMeshFromWorld(Vector3[] sourceWorldVertices, List<int> sourceTriangles, Transform proxyTransform)
     {
         Dictionary<int, int> oldToNew = new Dictionary<int, int>();
         List<Vector3> proxyVertices = new List<Vector3>();
@@ -176,14 +174,13 @@ public class SandMeshBuilder : MonoBehaviour
                 newIndex = proxyVertices.Count;
                 oldToNew[oldIndex] = newIndex;
 
-                // Convert ORIGINAL WORLD point into PROXY LOCAL space
                 Vector3 proxyLocalVertex = proxyTransform.InverseTransformPoint(sourceWorldVertices[oldIndex]);
                 proxyVertices.Add(proxyLocalVertex);
             }
 
             proxyTriangles.Add(newIndex);
         }
-        // Reverse triangle winding so the proxy normals face the correct way
+
         for (int i = 0; i < proxyTriangles.Count; i += 3)
         {
             int temp = proxyTriangles[i];
@@ -191,7 +188,6 @@ public class SandMeshBuilder : MonoBehaviour
             proxyTriangles[i + 1] = temp;
         }
 
-        // slightly flatten height differences for easier NavMesh baking
         if (navMeshHeightScale < 0.999f && proxyVertices.Count > 0)
         {
             float minY = float.MaxValue;
@@ -222,5 +218,27 @@ public class SandMeshBuilder : MonoBehaviour
         proxyMesh.RecalculateBounds();
 
         return proxyMesh;
+    }
+
+    // The reliable staggered baking coroutine
+    private IEnumerator WaitAndBakeNavMesh(float delay)
+    {
+        Debug.Log($"Waiting {delay} seconds for physics to catch up before baking...");
+        yield return new WaitForSeconds(delay);
+        ForceBakeNavMesh();
+    }
+
+    // The actual bake command, separated so the T key can use it
+    private void ForceBakeNavMesh()
+    {
+        if (navMeshSurface != null)
+        {
+            navMeshSurface.BuildNavMesh();
+            Debug.Log("AI NavMesh baked successfully!");
+        }
+        else
+        {
+            Debug.LogWarning("NavMeshSurface is missing in the Inspector! Cannot bake.");
+        }
     }
 }

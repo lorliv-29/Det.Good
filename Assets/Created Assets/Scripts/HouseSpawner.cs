@@ -6,10 +6,6 @@ using UnityEngine.AI;
 
 public class HouseSpawner : MonoBehaviour
 {
-    [Header("Spawn Sources")]
-    [Tooltip("All scene objects tagged 'House' will be used as spawn points.")]
-    public string houseTag = "House";
-
     [Header("People Prefabs")]
     [Tooltip("Prefabs to spawn. Each prefab should have a NavMeshAgent and (optionally) a Wanderer.")]
     public GameObject[] peoplePrefabs;
@@ -20,18 +16,15 @@ public class HouseSpawner : MonoBehaviour
     [Tooltip("Random radius around each house to try spawn candidates.")]
     public float spawnRadiusAroundHouse = 3f;
 
-    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate.")]
-    public float maxSpawnSearchDistance = 5f;
+    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate. Keep this small (e.g. 0.5) so they don't spawn off the table!")]
+    public float maxSpawnSearchDistance = 0.5f;
 
     [Tooltip("How many random attempts per person before giving up.")]
     public int attemptsPerPerson = 10;
 
     [Header("Spawn Timing")]
-    [Tooltip("Delay between each spawned person.")]
+    [Tooltip("Delay between each spawned person to prevent lag spikes.")]
     public float delayBetweenSpawns = 0.5f;
-
-    [Tooltip("Optional extra delay after finishing one house before starting the next.")]
-    public float delayBetweenHouses = 0.2f;
 
     [Header("Ground Detection")]
     [Tooltip("Raycast height above candidate point.")]
@@ -49,52 +42,57 @@ public class HouseSpawner : MonoBehaviour
 
     void Start()
     {
-        StartCoroutine(SpawnAllHousesRoutine());
+        // Do not spawn immediately! Wait until the player places it on the sand.
+        StartCoroutine(WaitUntilPlaced());
     }
 
-    IEnumerator SpawnAllHousesRoutine()
+    IEnumerator WaitUntilPlaced()
     {
-        GameObject[] houses = GameObject.FindGameObjectsWithTag(houseTag);
-
-        if (houses == null || houses.Length == 0)
+        bool isPlaced = false;
+        while (!isPlaced)
         {
-            Debug.LogError($"No objects found with tag '{houseTag}'.");
-            yield break;
+            // Check if this building is currently touching or very close to the baked NavMesh (the sand)
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 0.05f, NavMesh.AllAreas))
+            {
+                isPlaced = true; // We found the sand!
+            }
+            else
+            {
+                // We are still in the air/on the menu. Wait half a second and check again.
+                yield return new WaitForSeconds(0.5f);
+            }
         }
 
+        StartCoroutine(SpawnRoutine());
+    }
+
+    IEnumerator SpawnRoutine()
+    {
         if (peoplePrefabs == null || peoplePrefabs.Length == 0)
         {
             Debug.LogError("No peoplePrefabs assigned.");
             yield break;
         }
 
-        foreach (GameObject house in houses)
+        // ONLY spawn people for THIS specific house's location
+        for (int i = 0; i < peoplePerHouse; i++)
         {
-            if (house == null)
-                continue;
+            TrySpawnPerson(transform.position);
 
-            for (int i = 0; i < peoplePerHouse; i++)
-            {
-                TrySpawnPersonNearHouse(house.transform.position);
-
-                if (delayBetweenSpawns > 0f)
-                    yield return new WaitForSeconds(delayBetweenSpawns);
-            }
-
-            if (delayBetweenHouses > 0f)
-                yield return new WaitForSeconds(delayBetweenHouses);
+            if (delayBetweenSpawns > 0f)
+                yield return new WaitForSeconds(delayBetweenSpawns);
         }
     }
 
-    void TrySpawnPersonNearHouse(Vector3 housePos)
+    void TrySpawnPerson(Vector3 housePos)
     {
-        GameObject prefab = peoplePrefabs[UnityEngine.Random.Range(0, peoplePrefabs.Length)];
-
         if (housePos.y < -500f)
         {
             Debug.Log($"Skipping invalid house source at {housePos}");
             return;
         }
+
+        GameObject prefab = peoplePrefabs[UnityEngine.Random.Range(0, peoplePrefabs.Length)];
 
         for (int attempt = 0; attempt < attemptsPerPerson; attempt++)
         {
@@ -122,10 +120,7 @@ public class HouseSpawner : MonoBehaviour
             }
         }
 
-        Debug.Log(
-            $"Could not find NavMesh near house to spawn person. " +
-            $"HousePos={housePos}, spawnRadius={spawnRadiusAroundHouse}, maxSearch={maxSpawnSearchDistance}, attempts={attemptsPerPerson}"
-        );
+        Debug.LogWarning($"Could not find NavMesh near house to spawn person. HousePos={housePos}");
     }
 
     void Spawn(GameObject prefab, Vector3 navMeshPosition)
@@ -153,22 +148,8 @@ public class HouseSpawner : MonoBehaviour
 
             if (agent.enabled)
             {
-                bool warped = agent.Warp(go.transform.position);
-                if (!warped || !agent.isOnNavMesh)
-                {
-                    Debug.Log($"{go.name} spawned, but NavMeshAgent still failed to bind to NavMesh.");
-                }
+                agent.Warp(go.transform.position);
             }
-        }
-        else
-        {
-            Debug.Log($"{go.name} spawned but has no NavMeshAgent.");
-        }
-
-        Wanderer wanderer = go.GetComponent<Wanderer>();
-        if (wanderer == null)
-        {
-            Debug.Log($"{go.name} spawned but has no Wanderer component.");
         }
     }
 }

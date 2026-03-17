@@ -283,6 +283,7 @@ GameObject:
   - component: {fileID: 6170649518990508346}
   - component: {fileID: 5457118653434700782}
   - component: {fileID: -46141493765636771}
+  - component: {fileID: -2750873816945835763}
   m_Layer: 9
   m_Name: Tent
   m_TagString: House
@@ -371,6 +372,42 @@ MonoBehaviour:
   sandLayer:
     serializedVersion: 2
     m_Bits: 256
+--- !u!114 &-2750873816945835763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2548632427091309582}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 744972dd50ee10c46b66539b83c07081, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HouseSpawner
+  peoplePrefabs:
+  - {fileID: 7382745316790249221, guid: e62b83b75118408439051183a46881b9, type: 3}
+  - {fileID: 2881254370997800902, guid: 7a3dc95bcb7ba74409f00b2036858e72, type: 3}
+  - {fileID: 8515621586037903720, guid: 279aa93b06b4c194ba3e1a340bcf7312, type: 3}
+  - {fileID: 5816898434040786664, guid: 3e2219b5e3749384ab389977edd69d30, type: 3}
+  - {fileID: 9047006430213334783, guid: 9fc0ff48ca1a41041825d68940a1d5b2, type: 3}
+  - {fileID: 6442119958144888489, guid: 14a091ead4e0cb747a175230842ed4e9, type: 3}
+  - {fileID: 1269147294248680088, guid: b1151348a1b82b2429c1877c07443c01, type: 3}
+  - {fileID: 443970200984463356, guid: 9c6c0fef41772bb4fabea24ec3d824ad, type: 3}
+  - {fileID: 5832102151915319507, guid: 2c5f387a441f12642b20c8b6732e3b47, type: 3}
+  - {fileID: 1433516609278132905, guid: 7913e72803574564bbf7f3240cbd0d70, type: 3}
+  - {fileID: 3424096748225499574, guid: 70029007768ff2247a30d53b88a12d56, type: 3}
+  - {fileID: 8087529959932460667, guid: b198b5795b6f51740a0bb7c715439520, type: 3}
+  peoplePerHouse: 3
+  spawnRadiusAroundHouse: 1.5
+  maxSpawnSearchDistance: 50
+  attemptsPerPerson: 10
+  delayBetweenSpawns: 0.5
+  raycastHeight: 25
+  groundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  spawnHeightOffset: 0.2
+  postSpawnSnapDistance: 2
 --- !u!1 &2873679923854503595
 GameObject:
   m_ObjectHideFlags: 0

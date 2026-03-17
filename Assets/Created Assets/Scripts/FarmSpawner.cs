@@ -5,7 +5,6 @@ using UnityEngine.AI;
 public class FarmSpawner : MonoBehaviour
 {
     [Header("Tags")]
-    public string farmTag = "Farm";
     public string animalTag = "Animal";
 
     [Header("Animal Prefabs")]
@@ -18,8 +17,8 @@ public class FarmSpawner : MonoBehaviour
     [Tooltip("Random radius around each farm to try spawn candidates.")]
     public float spawnRadiusAroundFarm = 3f;
 
-    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate.")]
-    public float maxSpawnSearchDistance = 50f;
+    [Tooltip("How far we are allowed to search for a NavMesh point from the candidate. Keep this small!")]
+    public float maxSpawnSearchDistance = 0.5f;
 
     [Tooltip("How many random attempts per animal before giving up.")]
     public int attemptsPerAnimal = 10;
@@ -27,9 +26,6 @@ public class FarmSpawner : MonoBehaviour
     [Header("Spawn Timing")]
     [Tooltip("Delay between each spawned animal.")]
     public float delayBetweenSpawns = 0.5f;
-
-    [Tooltip("Optional extra delay after finishing one farm before starting the next.")]
-    public float delayBetweenFarms = 0.2f;
 
     [Header("Ground Detection")]
     [Tooltip("Raycast height above candidate point.")]
@@ -40,48 +36,35 @@ public class FarmSpawner : MonoBehaviour
 
     void Start()
     {
-        StartCoroutine(SpawnAllFarmsRoutine());
+        StartCoroutine(SpawnRoutine());
     }
 
-    IEnumerator SpawnAllFarmsRoutine()
+    IEnumerator SpawnRoutine()
     {
-        var farms = GameObject.FindGameObjectsWithTag(farmTag);
-        if (farms == null || farms.Length == 0)
+        if (animalPrefabs == null || animalPrefabs.Length == 0) yield break;
+
+        // ONLY spawn animals for THIS farm's location
+        for (int i = 0; i < animalsPerFarm; i++)
         {
-            Debug.LogError($"No objects found with tag '{farmTag}'.");
-            yield break;
-        }
+            TrySpawnAnimal(transform.position);
 
-        if (animalPrefabs == null || animalPrefabs.Length == 0)
-        {
-            Debug.LogError("No animalPrefabs assigned.");
-            yield break;
-        }
-
-        foreach (var farm in farms)
-        {
-            for (int i = 0; i < animalsPerFarm; i++)
-            {
-                TrySpawnAnimalNearFarm(farm.transform.position);
-
-                if (delayBetweenSpawns > 0f)
-                    yield return new WaitForSeconds(delayBetweenSpawns);
-            }
-
-            if (delayBetweenFarms > 0f)
-                yield return new WaitForSeconds(delayBetweenFarms);
+            if (delayBetweenSpawns > 0f)
+                yield return new WaitForSeconds(delayBetweenSpawns);
         }
     }
 
-    void TrySpawnAnimalNearFarm(Vector3 farmPos)
+    void TrySpawnAnimal(Vector3 farmPos)
     {
-        var prefab = animalPrefabs[Random.Range(0, animalPrefabs.Length)];
+        GameObject prefab = animalPrefabs[Random.Range(0, animalPrefabs.Length)];
 
         for (int attempt = 0; attempt < attemptsPerAnimal; attempt++)
         {
             Vector2 r = Random.insideUnitCircle * spawnRadiusAroundFarm;
+
+            // Search around the farm in XZ only
             Vector3 candidateXZ = new Vector3(farmPos.x + r.x, farmPos.y, farmPos.z + r.y);
 
+            // Raycast from high above world space
             Vector3 rayStart = candidateXZ + Vector3.up * raycastHeight;
             Vector3 sampleFrom = candidateXZ;
 
@@ -90,6 +73,7 @@ public class FarmSpawner : MonoBehaviour
                 sampleFrom = groundHit.point;
             }
 
+            // Sample the NavMesh using the small max search distance to prevent edge-snapping
             if (NavMesh.SamplePosition(sampleFrom, out NavMeshHit hit, maxSpawnSearchDistance, NavMesh.AllAreas))
             {
                 Spawn(prefab, hit.position);
@@ -97,16 +81,7 @@ public class FarmSpawner : MonoBehaviour
             }
         }
 
-        if (NavMesh.SamplePosition(farmPos, out NavMeshHit fallbackHit, maxSpawnSearchDistance * 2f, NavMesh.AllAreas))
-        {
-            Spawn(prefab, fallbackHit.position);
-            return;
-        }
-
-        Debug.LogWarning(
-            $"Could not find NavMesh near farm to spawn animal. " +
-            $"FarmPos={farmPos}, spawnRadius={spawnRadiusAroundFarm}, maxSearch={maxSpawnSearchDistance}, attempts={attemptsPerAnimal}"
-        );
+        Debug.LogWarning($"Could not find NavMesh near farm to spawn animal. FarmPos={farmPos}");
     }
 
     void Spawn(GameObject prefab, Vector3 position)
@@ -116,14 +91,10 @@ public class FarmSpawner : MonoBehaviour
         if (!string.IsNullOrEmpty(animalTag) && !go.CompareTag(animalTag))
             go.tag = animalTag;
 
-        if (go.GetComponent<NavMeshAgent>() == null)
+        NavMeshAgent agent = go.GetComponent<NavMeshAgent>();
+        if (agent != null)
         {
-            Debug.LogWarning($"{go.name} spawned but has no NavMeshAgent.");
-        }
-
-        if (go.GetComponent<Wanderer>() == null)
-        {
-            Debug.LogWarning($"{go.name} spawned but has no Wanderer component.");
+            agent.Warp(position);
         }
     }
 }

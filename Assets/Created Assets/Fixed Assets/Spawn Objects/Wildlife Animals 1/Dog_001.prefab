@@ -97,12 +97,12 @@ NavMeshAgent:
   m_GameObject: {fileID: 4729667470841759682}
   m_Enabled: 1
   m_AgentTypeID: -1372625422
-  m_Radius: 0.2
-  m_Speed: 0.05
+  m_Radius: 0.3
+  m_Speed: 0.01
   m_Acceleration: 2
   avoidancePriority: 50
   m_AngularSpeed: 120
-  m_StoppingDistance: 0.1
+  m_StoppingDistance: 0.01
   m_AutoTraverseOffMeshLink: 0
   m_AutoBraking: 1
   m_AutoRepath: 1
@@ -124,15 +124,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Wanderer
   territoryHalfX: 1.5
   territoryHalfZ: 1
-  minWait: 1.5
-  maxWait: 3.5
-  waypointTolerance: 0.15
-  sampleRadius: 0.35
-  stepDistance: 0.35
-  turnJitterDegrees: 20
-  bigTurnChance: 0.08
-  bigTurnRange: {x: 45, y: 90}
-  homePull: 0.55
-  agentSpeed: 0.6
+  minWait: 0.5
+  maxWait: 2
+  waypointTolerance: 0.01
+  sampleRadius: 0.5
+  stepDistance: 3
+  turnJitterDegrees: 35
+  bigTurnChance: 0.12
+  bigTurnRange: {x: 80, y: 160}
+  homePull: 0.35
+  agentSpeed: 0.01
   agentAcceleration: 2
   agentAngularSpeed: 180
