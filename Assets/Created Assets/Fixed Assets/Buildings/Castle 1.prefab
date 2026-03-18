@@ -142,7 +142,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &368868149853743071
 Transform:
   m_ObjectHideFlags: 0
@@ -456,6 +456,9 @@ MonoBehaviour:
   sandLayer:
     serializedVersion: 2
     m_Bits: 256
+  rayStartHeight: 10
+  rayDistance: 30
+  forceYRotationToZero: 1
 --- !u!1001 &518354010745096695
 PrefabInstance:
   m_ObjectHideFlags: 0

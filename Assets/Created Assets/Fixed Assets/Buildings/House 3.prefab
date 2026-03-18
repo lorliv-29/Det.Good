@@ -101,6 +101,9 @@ MonoBehaviour:
   sandLayer:
     serializedVersion: 2
     m_Bits: 256
+  rayStartHeight: 10
+  rayDistance: 30
+  forceYRotationToZero: 1
 --- !u!114 &7829740602357133041
 MonoBehaviour:
   m_ObjectHideFlags: 0

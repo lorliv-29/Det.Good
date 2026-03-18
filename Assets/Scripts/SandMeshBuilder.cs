@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Unity.AI.Navigation;
-using UnityEngine.InputSystem; // Added so we can use the T key!
+using UnityEngine.InputSystem;
 
 public class SandMeshBuilder : MonoBehaviour
 {
+    [Header("Physical Clipping")]
+    [Tooltip("The mesh will ONLY build inside this Box Collider. Leave empty to build everywhere.")]
+    public BoxCollider allowedSandArea;
+
     [Header("NavMesh Proxy")]
     public MeshFilter navMeshProxyFilter;
     public MeshCollider navMeshProxyCollider;
@@ -65,6 +69,7 @@ public class SandMeshBuilder : MonoBehaviour
                     int iTop = i + gridWidth;
                     int iTopRight = i + gridWidth + 1;
 
+                    // 1. Skip if depth data is invalid
                     if (worldVertices[i].y < invalidYThreshold ||
                         worldVertices[iRight].y < invalidYThreshold ||
                         worldVertices[iTop].y < invalidYThreshold ||
@@ -73,6 +78,19 @@ public class SandMeshBuilder : MonoBehaviour
                         continue;
                     }
 
+                    // 2. THE PHYSICAL CLIP: Skip if the points are outside our allowed bounding box
+                    if (allowedSandArea != null)
+                    {
+                        if (!allowedSandArea.bounds.Contains(worldVertices[i]) ||
+                            !allowedSandArea.bounds.Contains(worldVertices[iRight]) ||
+                            !allowedSandArea.bounds.Contains(worldVertices[iTop]) ||
+                            !allowedSandArea.bounds.Contains(worldVertices[iTopRight]))
+                        {
+                            continue;
+                        }
+                    }
+
+                    // 3. Build triangles if the points are close enough together
                     if (Vector3.Distance(worldVertices[i], worldVertices[iRight]) < maxEdge &&
                         Vector3.Distance(worldVertices[i], worldVertices[iTop]) < maxEdge)
                     {
@@ -148,7 +166,6 @@ public class SandMeshBuilder : MonoBehaviour
 
                 if (navMeshSurface != null)
                 {
-                    // Triggers the 1-second reliable delay
                     StartCoroutine(WaitAndBakeNavMesh(1.0f));
                 }
             }
@@ -220,7 +237,6 @@ public class SandMeshBuilder : MonoBehaviour
         return proxyMesh;
     }
 
-    // The reliable staggered baking coroutine
     private IEnumerator WaitAndBakeNavMesh(float delay)
     {
         Debug.Log($"Waiting {delay} seconds for physics to catch up before baking...");
@@ -228,7 +244,6 @@ public class SandMeshBuilder : MonoBehaviour
         ForceBakeNavMesh();
     }
 
-    // The actual bake command, separated so the T key can use it
     private void ForceBakeNavMesh()
     {
         if (navMeshSurface != null)
