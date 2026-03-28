@@ -1,0 +1,22 @@
+#pragma kernel CalibrateSand
+
+StructuredBuffer<float3> RawPoints;
+RWStructuredBuffer<float3> CalibratedPoints;
+
+// This matrix holds the Position, Rotation, and Scale of GameObject
+float4x4 _LocalToWorld;
+uint _VertexCount;
+
+[numthreads(64, 1, 1)]
+void CalibrateSand (uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _VertexCount) return;
+
+    float3 rawPos = RawPoints[id.x];
+
+    // Multiply the raw point by GameObject's Transform matrix
+    // Unity Rotation, Position, and Scale all at once
+    float3 finalPos = mul(_LocalToWorld, float4(rawPos, 1.0)).xyz;
+
+    CalibratedPoints[id.x] = finalPos;
+}

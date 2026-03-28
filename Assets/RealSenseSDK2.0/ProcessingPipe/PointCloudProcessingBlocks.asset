@@ -35,9 +35,9 @@ MonoBehaviour:
   m_Name: RsTemporalFilter
   m_EditorClassIdentifier: 
   enabled: 0
-  _filterSmoothAlpha: 0.4
-  _filterSmoothDelta: 20
-  _temporalPersistence: 3
+  _filterSmoothAlpha: 0.668
+  _filterSmoothDelta: 67
+  _temporalPersistence: 5
 --- !u!114 &114189879441361140
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -147,7 +147,7 @@ MonoBehaviour:
   enabled: 1
   TextureStream: 1
   TextureFormat: 5
-  _occlusionRemoval: 1
+  _occlusionRemoval: 2
 --- !u!114 &114947088938950326
 MonoBehaviour:
   m_ObjectHideFlags: 0
