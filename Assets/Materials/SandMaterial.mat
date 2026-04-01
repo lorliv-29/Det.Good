@@ -26,8 +26,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _LineThickness: 0.094
-    - _MaxHeight: 1.16
-    - _MinHeight: 0.96
+    - _MaxHeight: 1.17
+    - _MinHeight: 1.06
     - _PointSize: 0.005
     - _Steps: 10.54
     m_Colors:
